@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat with LLM</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      input[type="text"] { width: 400px; padding: 8px; }
+      button { padding: 8px 12px; }
+      pre { background: #f4f4f4; padding: 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>Chat with the LLM</h1>
+    <form method="get" action="{{ url_for('main.chat') }}">
+      <label for="q">Enter your question:</label><br>
+      <input type="text" id="q" name="q" placeholder="Type your question here" value="{{ query }}" required>
+      <button type="submit">Chat</button>
+    </form>
+    {% if answer %}
+      <h2>Answer:</h2>
+      <pre>{{ answer }}</pre>
+    {% endif %}
+    <p><a href="{{ url_for('main.index') }}">Return to Dashboard</a></p>
+  </body>
+</html>

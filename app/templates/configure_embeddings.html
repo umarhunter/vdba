@@ -1,0 +1,44 @@
+<!-- configure_embeddings.html -->
+<!-- This template is used to render the form for configuring the embedding fields. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Configure Embeddings</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      .spinner {
+        display: none;
+        margin-top: 20px;
+      }
+    </style>
+    <script>
+      // Show a spinner after form submission to indicate progress.
+      function showSpinner() {
+          document.getElementById("spinner").style.display = "block";
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Configure Embedding Fields</h1>
+    <form method="post" onsubmit="showSpinner()">
+      <p>Select the fields you want to include in the embedding:</p>
+      {% for field in available_fields %}
+        <input type="checkbox" name="selected_fields" value="{{ field }}" id="{{ field }}">
+        <label for="{{ field }}">{{ field }}</label><br>
+      {% endfor %}
+      <p>
+        <input type="checkbox" name="join_option" id="join_option" value="true">
+        <label for="join_option">Concatenate selected fields (raw join, without labels)</label>
+      </p>
+      <p>
+        <label for="separator">Separator (if concatenating):</label>
+        <input type="text" id="separator" name="separator" value=" " size="2">
+      </p>
+      <button type="submit">Upsert Documents</button>
+    </form>
+    <div id="spinner" class="spinner">
+      <p>Please wait while your documents are being upserted...</p>
+    </div>
+  </body>
+</html>

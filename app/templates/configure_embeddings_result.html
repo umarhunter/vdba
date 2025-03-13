@@ -1,0 +1,19 @@
+<!-- configure_embeddings_result.html -->
+<!-- This template is used to render the form for configuring the embedding fields. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Upsert Result</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      a { text-decoration: none; color: #337ab7; }
+      a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <h1>Upsert Complete</h1>
+    <p>Successfully upserted {{ count }} documents using fields: {{ fields }}</p>
+    <p><a href="{{ url_for('main.index') }}">Return to Dashboard</a></p>
+  </body>
+</html>
