@@ -3,7 +3,7 @@
 
 import os
 import getpass
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for
 from scripts.chromadb_handler import (
     initialize_chroma_client,
     get_or_create_collection,
@@ -39,6 +39,21 @@ collection = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_
 @main.route("/")
 def index():
     return render_template("index.html", query="", answer="", contexts="")
+
+
+# Settings Page
+@main.route("/settings", methods=["GET", "POST"])
+def settings():
+    global USER_CONFIG
+    if request.method == "POST":
+        USER_CONFIG['dataset'] = request.form.get("dataset", "Medicare")
+        USER_CONFIG['vector_db'] = request.form.get("vector_db", "ChromaDB")
+        USER_CONFIG['embedding_model'] = request.form.get("embedding_model", "all-mini")
+        USER_CONFIG['llm'] = request.form.get("llm", "DeepSeek")
+        return redirect(url_for("main.index"))
+    else:
+        return render_template("settings.html", config=USER_CONFIG)
+    
 
 # Route: Configure Embeddings
 @main.route("/configure_embeddings", methods=["GET", "POST"])

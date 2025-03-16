@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Application Settings</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      label { display: block; margin-top: 10px; }
+      select { padding: 8px; width: 220px; }
+      button { padding: 8px 12px; margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>Application Settings</h1>
+    <form method="post">
+      <label for="dataset">Select Dataset:</label>
+      <select id="dataset" name="dataset">
+        <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
+        <!-- Add more dataset options as they become available -->
+      </select>
+      
+      <label for="vector_db">Select Vector Database:</label>
+      <select id="vector_db" name="vector_db">
+        <option value="ChromaDB" {% if config.vector_db == 'ChromaDB' %}selected{% endif %}>ChromaDB</option>
+      </select>
+      
+      <label for="embedding_model">Select Embedding Model:</label>
+      <select id="embedding_model" name="embedding_model">
+        <option value="all-mini" {% if config.embedding_model == 'all-mini' %}selected{% endif %}>all-mini</option>
+      </select>
+      
+      <label for="llm">Select LLM for Chat:</label>
+      <select id="llm" name="llm">
+        <option value="DeepSeek" {% if config.llm == 'DeepSeek' %}selected{% endif %}>DeepSeek</option>
+        <option value="Llama2" {% if config.llm == 'Llama2' %}selected{% endif %}>Llama2</option>
+        <option value="OpenAI" {% if config.llm == 'OpenAI' %}selected{% endif %}>OpenAI</option>
+      </select>
+      
+      <button type="submit">Save Settings</button>
+    </form>
+    <p><a href="{{ url_for('main.index') }}">Return to Dashboard</a></p>
+  </body>
+</html>
