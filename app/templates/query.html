@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Query Documents</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      input[type="text"] { width: 400px; padding: 8px; }
+      button { padding: 8px 12px; }
+      .result { 
+        background: #f4f4f4; 
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .metadata {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Query Documents</h1>
+    <form method="get" action="{{ url_for('main.query_docs') }}">
+      <label for="q">Enter your query:</label><br>
+      <input type="text" id="q" name="q" placeholder="Enter query here" value="{{ query }}" required>
+      <button type="submit">Search</button>
+    </form>
+
+    {% if results %}
+      <h2>Search Results:</h2>
+      {% for doc in results %}
+        <div class="result">
+          <div class="content">{{ doc.page_content }}</div>
+          <div class="metadata">
+            <strong>Metadata:</strong>
+            <pre>{{ doc.metadata | tojson(indent=2) }}</pre>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <p><a href="{{ url_for('main.dashboard') }}">Return to Dashboard</a></p>
+  </body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Application Settings</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      label { display: block; margin-top: 10px; }
+      select, input[type="text"] { padding: 8px; width: 220px; }
+      button { padding: 8px 12px; margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>Application Settings</h1>
+    <form method="post">
+      <label for="dataset">Select Dataset:</label>
+      <select id="dataset" name="dataset">
+        <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
+        <!-- Additional dataset options can be added here -->
+      </select>
+      
+      <label for="vector_db">Select Vector Database:</label>
+      <select id="vector_db" name="vector_db">
+        <option value="ChromaDB" {% if config.vector_db == 'ChromaDB' %}selected{% endif %}>ChromaDB</option>
+        <option value="PineconeDB" {% if config.vector_db == 'PineconeDB' %}selected{% endif %}>PineconeDB</option>
+        <option value="PGVector" {% if config.vector_db == 'PGVector' %}selected{% endif %}>PGVector</option>
+      </select>
+      
+      <label for="embedding_model">Select Embedding Model:</label>
+      <select id="embedding_model" name="embedding_model">
+        <option value="all-MiniLM-L12-v2" {% if config.embedding_model == 'all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
+        <option value="all-MiniLM-L6-v2" {% if config.embedding_model == 'all-MiniLM-L6-v2' %}selected{% endif %}>MiniLM-L6-v2</option>
+        <option value="all-mpnet-base-v2" {% if config.embedding_model == 'all-mpnet-base-v2' %}selected{% endif %}>mpnet-base</option>
+        <option value="bge-large-en-v1.5" {% if config.embedding_model == 'bge-large-en-v1.5' %}selected{% endif %}>bge-large-en-v1.5</option>
+      </select>
+      
+      <label for="llm">Select LLM for Chat:</label>
+      <select id="llm" name="llm">
+        <option value="DeepSeek" {% if config.llm == 'DeepSeek' %}selected{% endif %}>DeepSeek</option>
+        <option value="Llama2" {% if config.llm == 'Llama2' %}selected{% endif %}>Llama2</option>
+        <option value="OpenAI" {% if config.llm == 'OpenAI' %}selected{% endif %}>OpenAI</option>
+      </select>
+      
+      <label for="openai_api_token">OpenAI API Token:</label>
+      <input type="text" id="openai_api_token" name="openai_api_token" value="{{ config.openai_api_token if config.openai_api_token is defined else '' }}">
+      
+      <label for="huggingface_api_token">HuggingFace API Token:</label>
+      <input type="text" id="huggingface_api_token" name="huggingface_api_token" value="{{ config.huggingface_api_token if config.huggingface_api_token is defined else '' }}">
+      
+      <button type="submit">Save Settings</button>
+    </form>
+    <p><a href="{{ url_for('main.dashboard') }}">Return to Dashboard</a></p>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat with LLM</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      input[type="text"] { width: 400px; padding: 8px; }
+      button { padding: 8px 12px; }
+      pre { background: #f4f4f4; padding: 10px; }
+      .current-model {
+        border: 1px solid #ddd;
+        padding: 8px;
+        margin-bottom: 20px;
+        display: inline-block;
+        background: #f9f9f9;
+      }
+      /* Spinner styles */
+      #spinner {
+        display: none;
+        margin-top: 20px;
+      }
+      .spinner {
+        border: 4px solid #f3f3f3; /* Light grey */
+        border-top: 4px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .spinner-text {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 0.9em;
+      }
+    </style>
+    <script>
+      function showSpinner() {
+        document.getElementById("spinner").style.display = "block";
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Chat with the LLM</h1>
+    <div class="current-model">
+      <strong>Current LLM:</strong> {{ current_llm }}
+    </div>
+    <!-- The form triggers the spinner on submission -->
+    <form method="get" action="{{ url_for('main.chat') }}" onsubmit="showSpinner()">
+      <label for="q">Enter your question:</label><br>
+      <input type="text" id="q" name="q" placeholder="Type your question here" value="{{ query }}" required>
+      <button type="submit">Chat</button>
+    </form>
+    
+    <!-- Spinner: hidden until the form is submitted -->
+    <div id="spinner">
+      <div class="spinner"></div>
+      <div class="spinner-text">Thinking...</div>
+    </div>
+    
+    {% if answer %}
+      <h2>Answer:</h2>
+      <pre>{{ answer }}</pre>
+    {% endif %}
+    <p><a href="{{ url_for('main.index') }}">Return to Dashboard</a></p>
+  </body>
+</html>
