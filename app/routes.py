@@ -17,6 +17,13 @@ from langchain.chains import RetrievalQA
 from scripts.data_loader import load_medicare_data
 from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDDING_MODEL_NAME, MODEL_CHOICE
 
+# Define the USER_CONFIG global variable with default settings.
+USER_CONFIG = {
+    'dataset': 'Medicare',
+    'vector_db': 'ChromaDB',
+    'embedding_model': 'all-mini',
+    'llm': 'DeepSeek'
+}
 
 
 main = Blueprint("main", __name__)
@@ -38,7 +45,7 @@ collection = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_
 # Route: Home page
 @main.route("/")
 def index():
-    return render_template("index.html", query="", answer="", contexts="")
+    return render_template("welcome.html")
 
 
 # Settings Page
@@ -64,40 +71,42 @@ def configure_embeddings():
         join_option = request.form.get("join_option") == "true"
         separator = request.form.get("separator", " ")
         
-        
-        # Load Medicare data
-        ny_data = load_medicare_data()
+        # Load dataset based on the user selection.
+        if USER_CONFIG['dataset'] == "Medicare":
+            data_df = load_medicare_data()
+        else:
+            # Placeholder if additional datasets are added later.
+            return render_template("configure_embeddings_result.html",
+                                   error="Selected dataset not implemented yet.",
+                                   fields=[])
         
         if not selected_fields:
-            return render_template(
-                "configure_embeddings_result.html",
-                error="Please select at least one field to embed.",
-                fields=[]
-            )
+            return render_template("configure_embeddings_result.html",
+                                   error="Please select at least one field to embed.",
+                                   fields=[])
         else:
-            print(selected_fields)
+            print("Selected fields:", selected_fields)
         
-        # Process documents using the global vectorstore
+        # Process documents using the vector store
         docs = upsert_medicare_documents(
-            collection=collection,
-            data_df=ny_data,
+            collection=get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, embedding_model),
+            data_df=data_df,
             selected_fields=selected_fields,
             join_option=join_option,
             separator=separator
         )
-        
-        # Render a result template so the user sees a friendly success message.
         return render_template("configure_embeddings_result.html",
                                count=len(docs),
                                fields=selected_fields)
     
-    # Handle GET request
-    data_df = load_medicare_data()
-    available_fields = data_df.columns.tolist()
-    return render_template(
-        "configure_embeddings.html",
-        available_fields=available_fields
-    )
+    # Handle GET request: show the available fields for the selected dataset.
+    if USER_CONFIG['dataset'] == "Medicare":
+        data_df = load_medicare_data()
+        available_fields = data_df.columns.tolist()
+    else:
+        available_fields = []
+    return render_template("configure_embeddings.html", available_fields=available_fields)
+
 
 # Route: Query Documents
 @main.route("/query", methods=["GET"])
@@ -117,13 +126,14 @@ def query_docs():
 def chat():
     query = request.args.get("q", "")
     if query:
-        if MODEL_CHOICE.lower() == "deepseek":
+        selected_llm = USER_CONFIG['llm'].lower()
+        if selected_llm == "deepseek":
             from langchain_ollama import ChatOllama
             llm = ChatOllama(model="deepseek-r1", temperature=0.0)
-        elif MODEL_CHOICE.lower() == "llama2":
+        elif selected_llm == "llama2":
             from langchain_ollama import ChatOllama
             llm = ChatOllama(model="llama2", temperature=0.0)
-        elif MODEL_CHOICE.lower() == "openai":
+        elif selected_llm == "openai":
             from langchain_openai import ChatOpenAI
             if not os.environ.get("OPENAI_API_KEY"):
                 os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
@@ -135,16 +145,15 @@ def chat():
                 max_retries=2,
             )
         else:
-            return jsonify({"error": "Invalid MODEL_CHOICE"}), 400
+            return jsonify({"error": "Invalid LLM choice"}), 400
 
-        coll = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, embedding_model)
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=coll.as_retriever(search_kwargs={"k": 10})
+            collection = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, embedding_model),
+            retriever = collection.as_retriever(search_kwargs={"k": 10})
         )
         answer = qa_chain.run(query)
         return render_template("chat.html", query=query, answer=answer)
     else:
-        # Render the chat form if no query parameter is provided.
         return render_template("chat.html", query="", answer="")

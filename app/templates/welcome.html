@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Vector Database Analysis</title>
+    <style>
+      body { 
+        font-family: Arial, sans-serif; 
+        margin: 40px; 
+        text-align: center; 
+      }
+      h1 { 
+        font-size: 2.5em; 
+        margin-bottom: 20px; 
+      }
+      p { 
+        font-size: 1.2em; 
+        margin-bottom: 30px; 
+      }
+      .button { 
+        display: inline-block; 
+        padding: 10px 20px; 
+        font-size: 1.1em; 
+        text-decoration: none; 
+        color: white; 
+        background: #337ab7; 
+        border-radius: 5px; 
+      }
+      .button:hover { 
+        background: #286090; 
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vector Database Analysis</h1>
+    <p>
+      Welcome to the Vector Database Analysis project. This application allows you to explore and analyze vector databases using various datasets, embedding models, and language models.
+    </p>
+    <a class="button" href="{{ url_for('main.settings') }}">Start</a>
+  </body>
+</html>
