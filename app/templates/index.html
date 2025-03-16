@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Medicare Retrieval App Dashboard</title>
+    <title>VDBA</title>
     <style>
       body { font-family: Arial, sans-serif; margin: 40px; }
       ul { list-style-type: none; padding: 0; }
@@ -20,12 +20,16 @@
         <br><a href="{{ url_for('main.configure_embeddings') }}">Configure Embedding Fields</a>
       </li>
       <li>
-        <strong>Query Documents:</strong> Search through the embedded Medicare data.
+        <strong>Query Documents:</strong> Search through the embedded dataset.
         <br><a href="{{ url_for('main.query_docs') }}">Query Documents</a>
       </li>
       <li>
         <strong>Chat with the LLM:</strong> Interact with a chatbot powered by your chosen LLM.
         <br><a href="{{ url_for('main.chat') }}">Chat with the LLM</a>
+      </li>
+      <li>
+        <strong>Settings:</strong>
+        <br><a href="{{ url_for('main.settings') }}">Configure Application Settings</a>
       </li>
     </ul>
   </body>
