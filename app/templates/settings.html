@@ -28,9 +28,9 @@
       
       <label for="embedding_model">Select Embedding Model:</label>
       <select id="embedding_model" name="embedding_model">
-        <option value="all-mini" {% if config.embedding_model == 'all-mini' %}selected{% endif %}>all-mini</option>
-        <option value="all-minil6" {% if config.embedding_model == 'all-minil6' %}selected{% endif %}>all-minil6</option>
-        <option value="mpnet-base" {% if config.embedding_model == 'mpnet-base' %}selected{% endif %}>mpnet-base</option>
+        <option value="all-MiniLM-L12-v2" {% if config.embedding_model == 'all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
+        <option value="all-MiniLM-L6-v2" {% if config.embedding_model == 'all-MiniLM-L6-v2' %}selected{% endif %}>MiniLM-L6-v2</option>
+        <option value="all-mpnet-base-v2" {% if config.embedding_model == 'all-mpnet-base-v2' %}selected{% endif %}>mpnet-base</option>
         <option value="bge-large-en-v1.5" {% if config.embedding_model == 'bge-large-en-v1.5' %}selected{% endif %}>bge-large-en-v1.5</option>
       </select>
       
