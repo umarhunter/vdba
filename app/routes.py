@@ -22,9 +22,10 @@ USER_CONFIG = {
     'dataset': 'Medicare',
     'vector_db': 'ChromaDB',
     'embedding_model': 'all-mini',
-    'llm': 'DeepSeek'
+    'llm': 'DeepSeek',
+    'openai_api_token': '',
+    'huggingface_api_token': ''
 }
-
 
 main = Blueprint("main", __name__)
 
@@ -47,6 +48,11 @@ collection = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_
 def index():
     return render_template("welcome.html")
 
+# New Dashboard Route
+@main.route("/dashboard")
+def dashboard():
+    # Render the renamed dashboard.html template.
+    return render_template("dashboard.html", query="", answer="", contexts="")
 
 # Settings Page
 @main.route("/settings", methods=["GET", "POST"])
@@ -57,7 +63,9 @@ def settings():
         USER_CONFIG['vector_db'] = request.form.get("vector_db", "ChromaDB")
         USER_CONFIG['embedding_model'] = request.form.get("embedding_model", "all-mini")
         USER_CONFIG['llm'] = request.form.get("llm", "DeepSeek")
-        return redirect(url_for("main.index"))
+        USER_CONFIG['openai_api_token'] = request.form.get("openai_api_token", "")
+        USER_CONFIG['huggingface_api_token'] = request.form.get("huggingface_api_token", "")
+        return redirect(url_for("main.dashboard"))
     else:
         return render_template("settings.html", config=USER_CONFIG)
     
@@ -125,6 +133,7 @@ def query_docs():
 @main.route("/chat", methods=["GET"])
 def chat():
     query = request.args.get("q", "")
+    current_llm = USER_CONFIG['llm']
     if query:
         selected_llm = USER_CONFIG['llm'].lower()
         if selected_llm == "deepseek":
@@ -150,10 +159,9 @@ def chat():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            collection = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, embedding_model),
-            retriever = collection.as_retriever(search_kwargs={"k": 10})
+            retriever=collection.as_retriever(search_kwargs={"k": 10})
         )
         answer = qa_chain.run(query)
-        return render_template("chat.html", query=query, answer=answer)
+        return render_template("chat.html", query=query, answer=answer, current_llm=current_llm)
     else:
-        return render_template("chat.html", query="", answer="")
+        return render_template("chat.html", query="", answer="", current_llm=current_llm)
