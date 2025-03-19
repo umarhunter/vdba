@@ -24,7 +24,18 @@ USER_CONFIG = {
     'embedding_model': 'all-mini',
     'llm': 'DeepSeek',
     'openai_api_token': '',
-    'huggingface_api_token': ''
+    'huggingface_api_token': '',
+    # ChromaDB specific settings
+    'chroma_settings': {
+        'collection_name': 'new_york_medicare',
+        'persist_directory': './chroma_db',
+        'collection_metadata': {'description': 'Medicare provider data'},
+        'embedding_function': 'sentence-transformers/all-MiniLM-L12-v2',
+    },
+    'pinecone_settings': {
+        'index_name': '',
+        'api_key': '',
+    }
 }
 
 main = Blueprint("main", __name__)
@@ -59,16 +70,42 @@ def dashboard():
 def settings():
     global USER_CONFIG
     if request.method == "POST":
+        # Update basic settings
         USER_CONFIG['dataset'] = request.form.get("dataset", "Medicare")
         USER_CONFIG['vector_db'] = request.form.get("vector_db", "ChromaDB")
         USER_CONFIG['embedding_model'] = request.form.get("embedding_model", "all-mini")
         USER_CONFIG['llm'] = request.form.get("llm", "DeepSeek")
         USER_CONFIG['openai_api_token'] = request.form.get("openai_api_token", "")
         USER_CONFIG['huggingface_api_token'] = request.form.get("huggingface_api_token", "")
+        
+        # Update ChromaDB specific settings if ChromaDB is selected
+        if USER_CONFIG['vector_db'] == 'ChromaDB':
+            USER_CONFIG['chroma_settings'].update({
+                'collection_name': request.form.get("chroma_collection_name", "new_york_medicare"),
+                'persist_directory': request.form.get("chroma_persist_dir", "./chroma_db"),
+                'collection_metadata': {
+                    'description': request.form.get("chroma_description", "Medicare provider data")
+                }
+            })
+            
+            # Reinitialize ChromaDB collection with new settings
+            global collection
+            collection = get_or_create_collection(
+                persist=USER_CONFIG['chroma_settings']['persist_directory'],
+                collection_name=USER_CONFIG['chroma_settings']['collection_name'],
+                embedding_model=embedding_model
+            )
+        
+        # Update Pinecone settings if PineconeDB is selected
+        if USER_CONFIG['vector_db'] == 'PineconeDB':
+            USER_CONFIG['pinecone_settings'].update({
+                'index_name': request.form.get("pinecone_index", ""),
+                'api_key': request.form.get("pinecone_api_key", "")
+            })
+        
         return redirect(url_for("main.dashboard"))
     else:
         return render_template("settings.html", config=USER_CONFIG)
-    
 
 # Route: Configure Embeddings
 @main.route("/configure_embeddings", methods=["GET", "POST"])

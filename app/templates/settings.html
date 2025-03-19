@@ -8,8 +8,22 @@
       label { display: block; margin-top: 10px; }
       select, input[type="text"] { padding: 8px; width: 220px; }
       button { padding: 8px 12px; margin-top: 20px; }
+      .hidden {
+          display: none;
+      }
+      .db-settings {
+      display: none;
+      padding: 15px;
+      margin: 15px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      }
+      .db-settings.active {
+        display: block;
+      }
     </style>
   </head>
+
   <body>
     <h1>Application Settings</h1>
     <form method="post">
@@ -20,12 +34,43 @@
       </select>
       
       <label for="vector_db">Select Vector Database:</label>
-      <select id="vector_db" name="vector_db">
+      <select id="vector_db" name="vector_db" onchange="toggleDbSettings()">
         <option value="ChromaDB" {% if config.vector_db == 'ChromaDB' %}selected{% endif %}>ChromaDB</option>
         <option value="PineconeDB" {% if config.vector_db == 'PineconeDB' %}selected{% endif %}>PineconeDB</option>
         <option value="PGVector" {% if config.vector_db == 'PGVector' %}selected{% endif %}>PGVector</option>
       </select>
-      
+
+
+     <!-- Database specific settings -->
+      <div id="chromadb-settings" class="db-settings {% if config.vector_db == 'ChromaDB' %}active{% endif %}">
+        <h2>ChromaDB Settings</h2>
+        <label for="chroma_collection_name">Collection Name:</label>
+        <input type="text" id="chroma_collection_name" name="chroma_collection_name"
+               value="{{ config.chroma_settings.collection_name }}">
+        
+        <label for="chroma_persist_dir">Persist Directory:</label>
+        <input type="text" id="chroma_persist_dir" name="chroma_persist_dir"
+               value="{{ config.chroma_settings.persist_directory }}">
+        
+        <label for="chroma_description">Collection Description:</label>
+        <textarea id="chroma_description" name="chroma_description">{{ config.chroma_settings.collection_metadata.description }}</textarea>
+      </div>
+
+      <div id="pineconedb-settings" class="db-settings {% if config.vector_db == 'PineconeDB' %}active{% endif %}">
+        <h2>Pinecone Settings</h2>
+        <label for="pinecone_api_key">Pinecone API Key:</label>
+        <input type="password" id="pinecone_api_key" name="pinecone_api_key"
+               value="{{ config.pinecone_settings.api_key }}">
+        
+        <label for="pinecone_index">Index Name:</label>
+        <input type="text" id="pinecone_index" name="pinecone_index"
+               value="{{ config.pinecone_settings.index_name }}">
+      </div>
+
+      <div id="pgvector-settings" class="db-settings {% if config.vector_db == 'PGVector' %}active{% endif %}">
+        <h2>PGVector Settings</h2>
+        <!-- Add PGVector specific fields here -->
+      </div>
       <label for="embedding_model">Select Embedding Model:</label>
       <select id="embedding_model" name="embedding_model">
         <option value="all-MiniLM-L12-v2" {% if config.embedding_model == 'all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
@@ -49,6 +94,24 @@
       
       <button type="submit">Save Settings</button>
     </form>
+    <script>
+      function toggleDbSettings() {
+        // Hide all database settings
+        document.querySelectorAll('.db-settings').forEach(el => {
+          el.classList.remove('active');
+        });
+        
+        // Show selected database settings
+        const selectedDb = document.getElementById('vector_db').value.toLowerCase();
+        const settingsDiv = document.getElementById(selectedDb + '-settings');
+        if (settingsDiv) {
+          settingsDiv.classList.add('active');
+        }
+      }
+
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', toggleDbSettings);
+    </script>
     <p><a href="{{ url_for('main.dashboard') }}">Return to Dashboard</a></p>
   </body>
 </html>
