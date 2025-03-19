@@ -4,114 +4,172 @@
     <meta charset="utf-8">
     <title>Application Settings</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 40px; }
-      label { display: block; margin-top: 10px; }
-      select, input[type="text"] { padding: 8px; width: 220px; }
-      button { padding: 8px 12px; margin-top: 20px; }
-      .hidden {
-          display: none;
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+      }
+      .settings-container {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+      }
+      select, input[type="text"], input[type="password"], textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-top: 4px;
+        box-sizing: border-box;
       }
       .db-settings {
-      display: none;
-      padding: 15px;
-      margin: 15px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+        display: none;
+        padding: 20px;
+        margin: 15px 0;
+        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
       }
       .db-settings.active {
         display: block;
       }
+      h2 {
+        color: #2c3e50;
+        margin-top: 0;
+        font-size: 1.5em;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+        margin-top: 20px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .back-link {
+        display: block;
+        margin-top: 20px;
+        text-align: center;
+        color: #6c757d;
+        text-decoration: none;
+      }
+      .back-link:hover {
+        color: #343a40;
+      }
     </style>
   </head>
-
   <body>
-    <h1>Application Settings</h1>
-    <form method="post">
-      <label for="dataset">Select Dataset:</label>
-      <select id="dataset" name="dataset">
-        <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
-        <!-- Additional dataset options can be added here -->
-      </select>
-      
-      <label for="vector_db">Select Vector Database:</label>
-      <select id="vector_db" name="vector_db" onchange="toggleDbSettings()">
-        <option value="ChromaDB" {% if config.vector_db == 'ChromaDB' %}selected{% endif %}>ChromaDB</option>
-        <option value="PineconeDB" {% if config.vector_db == 'PineconeDB' %}selected{% endif %}>PineconeDB</option>
-        <option value="PGVector" {% if config.vector_db == 'PGVector' %}selected{% endif %}>PGVector</option>
-      </select>
+    <div class="settings-container">
+      <h1>Application Settings</h1>
+      <form method="post">
+        <div class="form-group">
+          <label for="dataset">Dataset</label>
+          <select id="dataset" name="dataset">
+            <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
+          </select>
+        </div>
 
+        <div class="form-group">
+          <label for="vector_db">Vector Database</label>
+          <select id="vector_db" name="vector_db" onchange="toggleDbSettings()">
+            <option value="ChromaDB" {% if config.vector_db == 'ChromaDB' %}selected{% endif %}>ChromaDB</option>
+            <option value="PineconeDB" {% if config.vector_db == 'PineconeDB' %}selected{% endif %}>PineconeDB</option>
+            <option value="PGVector" {% if config.vector_db == 'PGVector' %}selected{% endif %}>PGVector</option>
+          </select>
+        </div>
 
-     <!-- Database specific settings -->
-      <div id="chromadb-settings" class="db-settings {% if config.vector_db == 'ChromaDB' %}active{% endif %}">
-        <h2>ChromaDB Settings</h2>
-        <label for="chroma_collection_name">Collection Name:</label>
-        <input type="text" id="chroma_collection_name" name="chroma_collection_name"
-               value="{{ config.chroma_settings.collection_name }}">
-        
-        <label for="chroma_persist_dir">Persist Directory:</label>
-        <input type="text" id="chroma_persist_dir" name="chroma_persist_dir"
-               value="{{ config.chroma_settings.persist_directory }}">
-        
-        <label for="chroma_description">Collection Description:</label>
-        <textarea id="chroma_description" name="chroma_description">{{ config.chroma_settings.collection_metadata.description }}</textarea>
-      </div>
+        <div id="chromadb-settings" class="db-settings {% if config.vector_db == 'ChromaDB' %}active{% endif %}">
+          <h2>ChromaDB Settings</h2>
+          <div class="form-group">
+            <label for="chroma_collection_name">Collection Name</label>
+            <input type="text" id="chroma_collection_name" name="chroma_collection_name" value="{{ config.chroma_settings.collection_name }}">
+          </div>
+          <div class="form-group">
+            <label for="chroma_persist_dir">Persist Directory</label>
+            <input type="text" id="chroma_persist_dir" name="chroma_persist_dir" value="{{ config.chroma_settings.persist_directory }}">
+          </div>
+          <div class="form-group">
+            <label for="chroma_description">Collection Description</label>
+            <textarea id="chroma_description" name="chroma_description">{{ config.chroma_settings.collection_metadata.description }}</textarea>
+          </div>
+        </div>
 
-      <div id="pineconedb-settings" class="db-settings {% if config.vector_db == 'PineconeDB' %}active{% endif %}">
-        <h2>Pinecone Settings</h2>
-        <label for="pinecone_api_key">Pinecone API Key:</label>
-        <input type="password" id="pinecone_api_key" name="pinecone_api_key"
-               value="{{ config.pinecone_settings.api_key }}">
-        
-        <label for="pinecone_index">Index Name:</label>
-        <input type="text" id="pinecone_index" name="pinecone_index"
-               value="{{ config.pinecone_settings.index_name }}">
-      </div>
+        <div id="pineconedb-settings" class="db-settings {% if config.vector_db == 'PineconeDB' %}active{% endif %}">
+          <h2>Pinecone Settings</h2>
+          <div class="form-group">
+            <label for="pinecone_api_key">API Key</label>
+            <input type="password" id="pinecone_api_key" name="pinecone_api_key" value="{{ config.pinecone_settings.api_key }}">
+          </div>
+          <div class="form-group">
+            <label for="pinecone_index">Index Name</label>
+            <input type="text" id="pinecone_index" name="pinecone_index" value="{{ config.pinecone_settings.index_name }}">
+          </div>
+        </div>
 
-      <div id="pgvector-settings" class="db-settings {% if config.vector_db == 'PGVector' %}active{% endif %}">
-        <h2>PGVector Settings</h2>
-        <!-- Add PGVector specific fields here -->
-      </div>
-      <label for="embedding_model">Select Embedding Model:</label>
-      <select id="embedding_model" name="embedding_model">
-        <option value="all-MiniLM-L12-v2" {% if config.embedding_model == 'all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
-        <option value="all-MiniLM-L6-v2" {% if config.embedding_model == 'all-MiniLM-L6-v2' %}selected{% endif %}>MiniLM-L6-v2</option>
-        <option value="all-mpnet-base-v2" {% if config.embedding_model == 'all-mpnet-base-v2' %}selected{% endif %}>mpnet-base</option>
-        <option value="bge-large-en-v1.5" {% if config.embedding_model == 'bge-large-en-v1.5' %}selected{% endif %}>bge-large-en-v1.5</option>
-      </select>
-      
-      <label for="llm">Select LLM for Chat:</label>
-      <select id="llm" name="llm">
-        <option value="DeepSeek" {% if config.llm == 'DeepSeek' %}selected{% endif %}>DeepSeek</option>
-        <option value="Llama2" {% if config.llm == 'Llama2' %}selected{% endif %}>Llama2</option>
-        <option value="OpenAI" {% if config.llm == 'OpenAI' %}selected{% endif %}>OpenAI</option>
-      </select>
-      
-      <label for="openai_api_token">OpenAI API Token:</label>
-      <input type="text" id="openai_api_token" name="openai_api_token" value="{{ config.openai_api_token if config.openai_api_token is defined else '' }}">
-      
-      <label for="huggingface_api_token">HuggingFace API Token:</label>
-      <input type="text" id="huggingface_api_token" name="huggingface_api_token" value="{{ config.huggingface_api_token if config.huggingface_api_token is defined else '' }}">
-      
-      <button type="submit">Save Settings</button>
-    </form>
+        <div class="form-group">
+          <label for="embedding_model">Embedding Model</label>
+          <select id="embedding_model" name="embedding_model">
+            <option value="all-MiniLM-L12-v2" {% if config.embedding_model == 'all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
+            <option value="all-MiniLM-L6-v2" {% if config.embedding_model == 'all-MiniLM-L6-v2' %}selected{% endif %}>MiniLM-L6-v2</option>
+            <option value="all-mpnet-base-v2" {% if config.embedding_model == 'all-mpnet-base-v2' %}selected{% endif %}>mpnet-base</option>
+            <option value="bge-large-en-v1.5" {% if config.embedding_model == 'bge-large-en-v1.5' %}selected{% endif %}>bge-large-en-v1.5</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="llm">LLM for Chat</label>
+          <select id="llm" name="llm">
+            <option value="DeepSeek" {% if config.llm == 'DeepSeek' %}selected{% endif %}>DeepSeek</option>
+            <option value="Llama2" {% if config.llm == 'Llama2' %}selected{% endif %}>Llama2</option>
+            <option value="OpenAI" {% if config.llm == 'OpenAI' %}selected{% endif %}>OpenAI</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="openai_api_token">OpenAI API Token</label>
+          <input type="password" id="openai_api_token" name="openai_api_token" value="{{ config.openai_api_token }}">
+        </div>
+
+        <div class="form-group">
+          <label for="huggingface_api_token">HuggingFace API Token</label>
+          <input type="password" id="huggingface_api_token" name="huggingface_api_token" value="{{ config.huggingface_api_token }}">
+        </div>
+
+        <button type="submit">Save Settings</button>
+      </form>
+    </div>
+
+    <a href="{{ url_for('main.dashboard') }}" class="back-link">Return to Dashboard</a>
+
     <script>
       function toggleDbSettings() {
-        // Hide all database settings
         document.querySelectorAll('.db-settings').forEach(el => {
           el.classList.remove('active');
         });
-        
-        // Show selected database settings
         const selectedDb = document.getElementById('vector_db').value.toLowerCase();
         const settingsDiv = document.getElementById(selectedDb + '-settings');
         if (settingsDiv) {
           settingsDiv.classList.add('active');
         }
       }
-
-      // Initialize on page load
       document.addEventListener('DOMContentLoaded', toggleDbSettings);
     </script>
-    <p><a href="{{ url_for('main.dashboard') }}">Return to Dashboard</a></p>
   </body>
 </html>
