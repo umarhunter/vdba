@@ -73,6 +73,26 @@
       .back-link:hover {
         color: #343a40;
       }
+      .dataset-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+      }
+      .upload-section {
+        flex-shrink: 0;
+      }
+      .secondary-button {
+        background-color: #6c757d;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .secondary-button:hover {
+        background-color: #5a6268;
+      }
     </style>
   </head>
   <body>
@@ -81,10 +101,50 @@
       <form method="post">
         <div class="form-group">
           <label for="dataset">Dataset</label>
-          <select id="dataset" name="dataset">
-            <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
-          </select>
+          <div class="dataset-controls">
+            <select id="dataset" name="dataset">
+              <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
+              {% for dataset in config.custom_datasets %}
+                <option value="{{ dataset.name }}" {% if config.dataset == dataset.name %}selected{% endif %}>
+                  {{ dataset.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="upload-section">
+              <input type="file" id="csv-upload" name="csv-file" accept=".csv" style="display: none;">
+              <button type="button" class="secondary-button" onclick="document.getElementById('csv-upload').click()">
+                Upload CSV
+              </button>
+            </div>
+          </div>
         </div>
+        <!-- Add this JavaScript before the existing script -->
+        <script>
+          document.getElementById('csv-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+              const formData = new FormData();
+              formData.append('csv-file', file);
+              
+              fetch('{{ url_for("main.upload_dataset") }}', {
+                method: 'POST',
+                body: formData
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  location.reload();  // Refresh to show new dataset
+                } else {
+                  alert('Upload failed: ' + data.error);
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                alert('Upload failed. Please try again.');
+              });
+            }
+          });
+        </script>
 
         <div class="form-group">
           <label for="vector_db">Vector Database</label>

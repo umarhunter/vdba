@@ -13,7 +13,7 @@ from scripts.chromadb_handler import (
 )
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
-
+from werkzeug.utils import secure_filename
 from scripts.data_loader import load_medicare_data
 from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDDING_MODEL_NAME, MODEL_CHOICE
 
@@ -107,6 +107,53 @@ def settings():
     else:
         return render_template("settings.html", config=USER_CONFIG)
 
+@main.route("/upload_dataset", methods=["POST"])
+def upload_dataset():
+    if 'csv-file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file uploaded'})
+    
+    file = request.files['csv-file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'})
+    
+    if not file.filename.endswith('.csv'):
+        return jsonify({'success': False, 'error': 'Only CSV files are supported'})
+    
+    try:
+        # Secure the filename
+        filename = secure_filename(file.filename)
+        
+        # Create uploads directory if it doesn't exist
+        upload_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save file
+        filepath = os.path.join(upload_dir, filename)
+        file.save(filepath)
+        
+        # Add to custom datasets
+        dataset_info = {
+            'name': os.path.splitext(filename)[0],
+            'path': filepath
+        }
+        
+        # Update USER_CONFIG
+        if 'custom_datasets' not in USER_CONFIG:
+            USER_CONFIG['custom_datasets'] = []
+            
+        # Check if dataset already exists
+        existing = next((d for d in USER_CONFIG['custom_datasets'] 
+                        if d['name'] == dataset_info['name']), None)
+        if existing:
+            existing.update(dataset_info)
+        else:
+            USER_CONFIG['custom_datasets'].append(dataset_info)
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+    
 # Route: Configure Embeddings
 @main.route("/configure_embeddings", methods=["GET", "POST"])
 def configure_embeddings():
