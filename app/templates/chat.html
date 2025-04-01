@@ -156,38 +156,36 @@
   </head>
   <body>
     <div class="chat-container">
-      <h1>Chat with the LLM</h1>
+      <h1>Chat with LLM</h1>
       <div class="current-model">
-        <strong>Current LLM:</strong> {{ current_llm }}
+          <strong>Current LLM:</strong> {{ current_llm }}
       </div>
-
+  
       <div class="chat-history" id="chatHistory">
-        {% if chat_history %}
-            {% for message in chat_history %}
-                <div class="message clearfix">
-                    <div class="{{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
-                        {{ message.content }}
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-    </div>
+          {% if chat_history %}
+              {% for message in chat_history %}
+                  <div class="message clearfix">
+                      <div class="{{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+                          {{ message.content }}
+                      </div>
+                  </div>
+              {% endfor %}
+          {% endif %}
+      </div>
+  
+      <form class="chat-form" id="chatForm" onsubmit="handleSubmit(event)">
+          <div class="chat-input">
+              <input type="text" id="q" name="q" placeholder="Type your message here..." autocomplete="off" required>
+              <button type="submit">Send</button>
+          </div>
+      </form>
+  
+      <div id="spinner" style="display: none;">
+          <div class="spinner"></div>
+          <p>Thinking...</p>
+      </div>
+  </div>
 
-  <!-- Update form to use AJAX -->
-  <form class="chat-form" id="chatForm" onsubmit="handleSubmit(event)">
-      <div class="chat-input">
-          <input type="text" id="q" name="q" 
-                 placeholder="Type your message here..." 
-                 autocomplete="off" required>
-          <button type="submit">Send</button>
-      </div>
-  </form>
-      
-      <div id="spinner">
-        <div class="spinner"></div>
-        <p>Thinking...</p>
-      </div>
-      
       {% if answer %}
         <div class="answer">
           <h2>Answer:</h2>
@@ -236,20 +234,28 @@
         spinner.style.display = 'block';
 
         try {
-          const response = await fetch(`{{ url_for('main.chat') }}?q=${encodeURIComponent(message)}`);
-          const data = await response.json();
-          
-          // Add assistant response
-          if (data.answer) {
-            addMessage(data.answer);
-          }
+            const response = await fetch(`{{ url_for('main.chat') }}?q=${encodeURIComponent(message)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Add assistant response
+            if (data.answer) {
+                addMessage(data.answer);
+            }
         } catch (error) {
-          console.error('Error:', error);
-          addMessage('Sorry, there was an error processing your request.', false);
+            console.error('Error:', error);
+            addMessage('Error: ' + error.message, false);
         } finally {
-          spinner.style.display = 'none';
+            spinner.style.display = 'none';
         }
-      }
+    }
 
       // Initialize
       document.addEventListener('DOMContentLoaded', () => {

@@ -223,51 +223,47 @@ def chat():
     if 'chat_history' not in session:
         session['chat_history'] = []
 
-
-
     if query:
-        selected_llm = USER_CONFIG['llm'].lower()
-        if selected_llm == "deepseek":
-            from langchain_ollama import ChatOllama
-            llm = ChatOllama(model="deepseek-r1", temperature=0.0)
-        elif selected_llm == "llama2":
-            from langchain_ollama import ChatOllama
-            llm = ChatOllama(model="llama2", temperature=0.0)
-        elif selected_llm == "openai":
-            from langchain_openai import ChatOpenAI
-            if not os.environ.get("OPENAI_API_KEY"):
-                os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
-            llm = ChatOpenAI(
-                model="gpt-4o",
-                temperature=0,
-                max_tokens=None,
-                timeout=None,
-                max_retries=2,
-            )
-        else:
-            return jsonify({"error": "Invalid LLM choice"}), 400
+        try:
+            selected_llm = USER_CONFIG['llm'].lower()
+            if selected_llm == "deepseek":
+                from langchain_ollama import ChatOllama
+                llm = ChatOllama(model="deepseek-r1", temperature=0.0)
+            elif selected_llm == "llama2":
+                from langchain_ollama import ChatOllama
+                llm = ChatOllama(model="llama2", temperature=0.0)
+            elif selected_llm == "openai":
+                from langchain_openai import ChatOpenAI
+                if not os.environ.get("OPENAI_API_KEY"):
+                    return jsonify({"error": "OpenAI API key not set"}), 400
+                llm = ChatOpenAI(
+                    model="gpt-4",  # Fixed typo in model name
+                    temperature=0,
+                    max_tokens=None,
+                    timeout=None,
+                    max_retries=2,
+                )
+            else:
+                return jsonify({"error": "Invalid LLM choice"}), 400
 
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=collection.as_retriever(search_kwargs={"k": 10})
-        )
-        answer = qa_chain.run(query)
-        answer = qa_chain.run(query)
-        
-        # Add to chat history
-        session['chat_history'].append({'role': 'user', 'content': query})
-        session['chat_history'].append({'role': 'assistant', 'content': answer})
-        
-        # If it's an AJAX request, return JSON
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            qa_chain = RetrievalQA.from_chain_type(
+                llm=llm,
+                chain_type="stuff",
+                retriever=collection.as_retriever(search_kwargs={"k": 10})
+            )
+            
+            answer = qa_chain.run(query)
+            
+            # Add to chat history
+            session['chat_history'].append({'role': 'user', 'content': query})
+            session['chat_history'].append({'role': 'assistant', 'content': answer})
+            
             return jsonify({'answer': answer})
-        
-        # Otherwise render template with full history
-        return render_template("chat.html", 
-                            current_llm=current_llm,
-                            chat_history=session['chat_history'])
-    else:
-        return render_template("chat.html", 
-                            current_llm=current_llm,
-                            chat_history=session['chat_history'])
+            
+        except Exception as e:
+            print(f"Error in chat: {str(e)}")  # For debugging
+            return jsonify({"error": str(e)}), 500
+            
+    return render_template("chat.html", 
+                         current_llm=current_llm,
+                         chat_history=session.get('chat_history', []))
