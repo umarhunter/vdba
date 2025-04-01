@@ -10,7 +10,7 @@ load_dotenv(env_path)
 # Sensitive configuration (API keys)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
-
+NGROK_AUTHTOKEN = os.getenv("NGROK_AUTHTOKEN")
 # ChromaDB settings
 CHROMADB_PERSIST_DIR = os.getenv("PERSIST_DIR", "./chroma_db")
 CHROMADB_COLLECTION_NAME = os.getenv("CHROMADB_COLLECTION_NAME", "new_york_medicare")
