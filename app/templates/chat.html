@@ -81,6 +81,77 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+      .chat-history {
+        height: 400px;
+        overflow-y: auto;
+        margin: 20px 0;
+        padding: 15px;
+        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+      }
+
+      .message {
+        margin: 10px 0;
+        max-width: 80%;
+        clear: both;
+      }
+
+      .user-message {
+        float: right;
+        background: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 15px 15px 0 15px;
+      }
+
+      .assistant-message {
+        float: left;
+        background: #f1f3f4;
+        color: #333;
+        padding: 10px 15px;
+        border-radius: 15px 15px 15px 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .chat-input {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .chat-input input {
+        flex-grow: 1;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 25px;
+        margin: 0;
+      }
+
+      .chat-input button {
+        padding: 12px 25px;
+        border-radius: 25px;
+      }
+
+      /* Update existing spinner styles */
+      #spinner {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .clearfix::after {
+        content: "";
+        clear: both;
+        display: table;
+      }
     </style>
   </head>
   <body>
@@ -89,11 +160,28 @@
       <div class="current-model">
         <strong>Current LLM:</strong> {{ current_llm }}
       </div>
-      <form class="chat-form" method="get" action="{{ url_for('main.chat') }}" onsubmit="showSpinner()">
-        <label for="q">Enter your question:</label>
-        <input type="text" id="q" name="q" placeholder="Type your question here" value="{{ query }}" required>
-        <button type="submit">Send</button>
-      </form>
+
+      <div class="chat-history" id="chatHistory">
+        {% if chat_history %}
+            {% for message in chat_history %}
+                <div class="message clearfix">
+                    <div class="{{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+                        {{ message.content }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+  <!-- Update form to use AJAX -->
+  <form class="chat-form" id="chatForm" onsubmit="handleSubmit(event)">
+      <div class="chat-input">
+          <input type="text" id="q" name="q" 
+                 placeholder="Type your message here..." 
+                 autocomplete="off" required>
+          <button type="submit">Send</button>
+      </div>
+  </form>
       
       <div id="spinner">
         <div class="spinner"></div>
@@ -111,9 +199,70 @@
     <a href="{{ url_for('main.dashboard') }}" class="back-link">Return to Dashboard</a>
     
     <script>
-      function showSpinner() {
-        document.getElementById("spinner").style.display = "block";
+      const chatHistory = document.getElementById('chatHistory');
+      const chatForm = document.getElementById('chatForm');
+      const spinner = document.getElementById('spinner');
+
+      // Scroll to bottom of chat history
+      function scrollToBottom() {
+        chatHistory.scrollTop = chatHistory.scrollHeight;
       }
+
+      // Add new message to chat
+      function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message clearfix';
+        messageDiv.innerHTML = `
+          <div class="${isUser ? 'user-message' : 'assistant-message'}">
+            ${content}
+          </div>
+        `;
+        chatHistory.appendChild(messageDiv);
+        scrollToBottom();
+      }
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+        const input = document.getElementById('q');
+        const message = input.value.trim();
+        
+        if (!message) return;
+
+        // Add user message
+        addMessage(message, true);
+        input.value = '';
+
+        // Show spinner
+        spinner.style.display = 'block';
+
+        try {
+          const response = await fetch(`{{ url_for('main.chat') }}?q=${encodeURIComponent(message)}`);
+          const data = await response.json();
+          
+          // Add assistant response
+          if (data.answer) {
+            addMessage(data.answer);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          addMessage('Sorry, there was an error processing your request.', false);
+        } finally {
+          spinner.style.display = 'none';
+        }
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', () => {
+        scrollToBottom();
+        
+        // Enable enter key submission
+        document.getElementById('q').addEventListener('keypress', function(e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+          }
+        });
+      });
     </script>
   </body>
 </html>

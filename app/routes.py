@@ -3,7 +3,7 @@
 
 import os
 import getpass
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from scripts.chromadb_handler import (
     initialize_chroma_client,
     get_or_create_collection,
@@ -218,6 +218,13 @@ def query_docs():
 def chat():
     query = request.args.get("q", "")
     current_llm = USER_CONFIG['llm']
+    
+    # Initialize chat history in session if not present
+    if 'chat_history' not in session:
+        session['chat_history'] = []
+
+
+
     if query:
         selected_llm = USER_CONFIG['llm'].lower()
         if selected_llm == "deepseek":
@@ -246,6 +253,21 @@ def chat():
             retriever=collection.as_retriever(search_kwargs={"k": 10})
         )
         answer = qa_chain.run(query)
-        return render_template("chat.html", query=query, answer=answer, current_llm=current_llm)
+        answer = qa_chain.run(query)
+        
+        # Add to chat history
+        session['chat_history'].append({'role': 'user', 'content': query})
+        session['chat_history'].append({'role': 'assistant', 'content': answer})
+        
+        # If it's an AJAX request, return JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'answer': answer})
+        
+        # Otherwise render template with full history
+        return render_template("chat.html", 
+                            current_llm=current_llm,
+                            chat_history=session['chat_history'])
     else:
-        return render_template("chat.html", query="", answer="", current_llm=current_llm)
+        return render_template("chat.html", 
+                            current_llm=current_llm,
+                            chat_history=session['chat_history'])
