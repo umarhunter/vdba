@@ -194,10 +194,13 @@
         </div>
 
         <div class="form-group">
-          <label for="llm">LLM for Chat</label>
+          <label for="llm">LLM ChatBot</label>
           <select id="llm" name="llm">
-            <option value="DeepSeek" {% if config.llm == 'DeepSeek' %}selected{% endif %}>DeepSeek</option>
-            <option value="Llama2" {% if config.llm == 'Llama2' %}selected{% endif %}>Llama2</option>
+            {% for model in available_models %}
+            <option value="{{ model }}" {% if config.llm.lower() == model.lower() %}selected{% endif %}>
+                {{ model }}
+            </option>
+            {% endfor %}
             <option value="OpenAI" {% if config.llm == 'OpenAI' %}selected{% endif %}>OpenAI</option>
           </select>
         </div>

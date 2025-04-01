@@ -3,6 +3,9 @@
 
 import os
 import getpass
+import ollama
+
+from datetime import datetime
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from scripts.chromadb_handler import (
     initialize_chroma_client,
@@ -65,6 +68,18 @@ def dashboard():
     # Render the renamed dashboard.html template.
     return render_template("dashboard.html", query="", answer="", contexts="")
 
+
+def get_available_llm_models():
+    try:
+        response = ollama.list()
+        # Extract model names and remove ':latest' suffix
+        models = [model.model.replace(':latest', '') for model in response.models]
+        return models
+    except Exception as e:
+        print(f"Error fetching Ollama models: {e}")
+        return ["deepseek", "llama2"]  # Fallback default models
+    
+
 # Settings Page
 @main.route("/settings", methods=["GET", "POST"])
 def settings():
@@ -105,7 +120,10 @@ def settings():
         
         return redirect(url_for("main.dashboard"))
     else:
-        return render_template("settings.html", config=USER_CONFIG)
+        available_models = get_available_llm_models()
+        return render_template("settings.html", 
+                            config=USER_CONFIG,
+                            available_models=available_models)
 
 @main.route("/upload_dataset", methods=["POST"])
 def upload_dataset():
@@ -212,6 +230,8 @@ def query_docs():
     else:
         # Render the query form if no query parameter is provided.
         return render_template("query.html", query="", results=None)
+
+
 
 # Route: Chat with LLM
 @main.route("/chat", methods=["GET"])
