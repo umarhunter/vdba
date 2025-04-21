@@ -174,15 +174,42 @@
         <div id="pineconedb-settings" class="db-settings {% if config.vector_db == 'PineconeDB' %}active{% endif %}">
           <h2>Pinecone Settings</h2>
           <div class="form-group">
-            <label for="pinecone_api_key">API Key</label>
-            <input type="password" id="pinecone_api_key" name="pinecone_api_key" value="{{ config.pinecone_settings.api_key }}">
+              <label for="pinecone_api_key">Pinecone API Key</label>
+              <input type="password" id="pinecone_api_key" name="pinecone_api_key" value="{{ config.pinecone_settings.api_key }}">
           </div>
           <div class="form-group">
-            <label for="pinecone_index">Index Name</label>
-            <input type="text" id="pinecone_index" name="pinecone_index" value="{{ config.pinecone_settings.index_name }}">
+              <label for="pinecone_index">Pinecone Index Name</label>
+              <input type="text" id="pinecone_index" name="pinecone_index" value="{{ config.pinecone_settings.index_name }}">
+          </div>
+          <div class="form-group">
+              <label for="pinecone_embedding_provider">Embedding Provider</label>
+              <select id="pinecone_embedding_provider" name="pinecone_embedding_provider" onchange="togglePineconeModels()">
+                  <option value="pinecone" {% if config.pinecone_settings.embedding_provider == 'pinecone' %}selected{% endif %}>Pinecone</option>
+                  <option value="openai" {% if config.pinecone_settings.embedding_provider == 'openai' %}selected{% endif %}>OpenAI</option>
+              </select>
+          </div>
+          <div class="form-group">
+            <small style="color: #666; display: block; margin-top: 5px;">
+              Note: When using Pinecone, the embedding model is determined by the Pinecone-specific settings above.
+            </small>
+          </div>
+          <div id="pinecone-models" class="form-group" {% if config.pinecone_settings.embedding_provider != 'pinecone' %}style="display:none"{% endif %}>
+              <label for="pinecone_model">Pinecone Model</label>
+              <select id="pinecone_model" name="pinecone_model">
+                  <option value="multilingual-e5-large" {% if config.pinecone_settings.model == 'multilingual-e5-large' %}selected{% endif %}>multilingual-e5-large</option>
+                  <option value="llama-text-embed-v2" {% if config.pinecone_settings.model == 'llama-text-embed-v2' %}selected{% endif %}>llama-text-embed-v2</option>
+              </select>
+          </div>
+          <div id="openai-models" class="form-group" {% if config.pinecone_settings.embedding_provider != 'openai' %}style="display:none"{% endif %}>
+              <label for="openai_model">OpenAI Model</label>
+              <select id="openai_model" name="openai_model">
+                  <option value="text-embedding-3-large" {% if config.pinecone_settings.model == 'text-embedding-3-large' %}selected{% endif %}>text-embedding-3-large</option>
+                  <option value="text-embedding-3-small" {% if config.pinecone_settings.model == 'text-embedding-3-small' %}selected{% endif %}>text-embedding-3-small</option>
+                  <option value="text-embedding-ada-002" {% if config.pinecone_settings.model == 'text-embedding-ada-002' %}selected{% endif %}>text-embedding-ada-002</option>
+              </select>
           </div>
         </div>
-
+        
         <div class="form-group">
           <label for="embedding_model">Embedding Model</label>
           <select id="embedding_model" name="embedding_model">
@@ -223,6 +250,7 @@
 
     <script>
       function toggleDbSettings() {
+        // Existing db settings toggle
         document.querySelectorAll('.db-settings').forEach(el => {
           el.classList.remove('active');
         });
@@ -231,8 +259,40 @@
         if (settingsDiv) {
           settingsDiv.classList.add('active');
         }
+    
+        // Handle embedding model visibility
+        const embeddingModelSelect = document.getElementById('embedding_model');
+        if (selectedDb === 'pineconedb') {
+          embeddingModelSelect.disabled = true;
+          embeddingModelSelect.parentElement.style.opacity = '0.5';
+        } else {
+          embeddingModelSelect.disabled = false;
+          embeddingModelSelect.parentElement.style.opacity = '1';
+        }
       }
-      document.addEventListener('DOMContentLoaded', toggleDbSettings);
+    
+      function togglePineconeModels() {
+        const provider = document.getElementById('pinecone_embedding_provider').value;
+        const pineconeModels = document.getElementById('pinecone-models');
+        const openaiModels = document.getElementById('openai-models');
+        
+        if (provider === 'pinecone') {
+          pineconeModels.style.display = 'block';
+          openaiModels.style.display = 'none';
+        } else {
+          pineconeModels.style.display = 'none';
+          openaiModels.style.display = 'block';
+        }
+      }
+    
+      // Call both functions on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        toggleDbSettings();
+        togglePineconeModels();
+      });
+    
+      // Add event listener for vector db changes
+      document.getElementById('vector_db').addEventListener('change', toggleDbSettings);
     </script>
   </body>
 </html>
