@@ -76,6 +76,7 @@ def upsert_medicare_documents(collection, data_df, selected_fields, join_option=
             embedding_text = concatenate_fields(row, selected_fields, separator)
         else:
             embedding_text = create_dynamic_embedding_text(row, selected_fields, field_labels)
+            
         # Create a unique ID (combining NPI and row index)
         unique_id = f"{row.get('Rndrng_NPI', 'unknown')}_{i}" 
         documents.append(Document(page_content=embedding_text, metadata=row.to_dict()))
