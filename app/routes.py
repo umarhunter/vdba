@@ -246,25 +246,31 @@ def chat():
     if query:
         try:
             selected_llm = USER_CONFIG['llm'].lower()
-            if selected_llm == "deepseek":
-                from langchain_ollama import ChatOllama
-                llm = ChatOllama(model="deepseek-r1", temperature=0.0)
-            elif selected_llm == "llama2":
-                from langchain_ollama import ChatOllama
-                llm = ChatOllama(model="llama2", temperature=0.0)
-            elif selected_llm == "openai":
-                from langchain_openai import ChatOpenAI
-                if not os.environ.get("OPENAI_API_KEY"):
-                    return jsonify({"error": "OpenAI API key not set"}), 400
-                llm = ChatOpenAI(
-                    model="gpt-4",  # Fixed typo in model name
-                    temperature=0,
-                    max_tokens=None,
-                    timeout=None,
-                    max_retries=2,
-                )
-            else:
-                return jsonify({"error": "Invalid LLM choice"}), 400
+            # if selected_llm == "deepseek":
+            #     from langchain_ollama import ChatOllama
+            #     llm = ChatOllama(model="deepseek-r1", temperature=0.0)
+            # elif selected_llm == "llama2":
+            #     from langchain_ollama import ChatOllama
+            #     llm = ChatOllama(model="llama2", temperature=0.0)
+
+            try:
+                if selected_llm == "openai":
+                    from langchain_openai import ChatOpenAI
+                    if not os.environ.get("OPENAI_API_KEY"):
+                        return jsonify({"error": "OpenAI API key not set"}), 400
+                    llm = ChatOpenAI(
+                        model="gpt-4",  # Fixed typo in model name
+                        temperature=0,
+                        max_tokens=None,
+                        timeout=None,
+                        max_retries=2,
+                    )
+                else:
+                    from langchain_ollama import ChatOllama
+                    # Fallback to default model if not recognized
+                    llm = ChatOllama(model=selected_llm, temperature=0.0)
+            except Exception as e:
+                    return jsonify({"error": f"Failed to load model '{selected_llm}': {str(e)}"}), 400
 
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
