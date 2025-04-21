@@ -257,18 +257,17 @@
         }
     }
 
-      // Initialize
       document.addEventListener('DOMContentLoaded', () => {
-        scrollToBottom();
-        
-        // Enable enter key submission
-        document.getElementById('q').addEventListener('keypress', function(e) {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            chatForm.dispatchEvent(new Event('submit'));
-          }
-        });
+      scrollToBottom();
+      
+      // Fix Enter key submission
+      document.getElementById('q').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();  // Prevent form submission
+          handleSubmit(new Event('submit'));  // Call handleSubmit directly
+        }
       });
+    });
     </script>
   </body>
 </html>

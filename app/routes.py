@@ -2,11 +2,17 @@
 # The routes.py file contains the route definitions for the Flask application. It defines the behavior of the application when a user accesses different URLs or endpoints.
 
 import os
+import chromadb
 import getpass
 import ollama
+import pandas as pd
 
 from datetime import datetime
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.chains import RetrievalQA
+from werkzeug.utils import secure_filename
+
 from scripts.chromadb_handler import (
     initialize_chroma_client,
     get_or_create_collection,
@@ -14,9 +20,7 @@ from scripts.chromadb_handler import (
     create_dynamic_embedding_text,
     concatenate_fields
 )
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.chains import RetrievalQA
-from werkzeug.utils import secure_filename
+from scripts.pineconedb_handler import PineconeHandler
 from scripts.data_loader import load_medicare_data
 from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDDING_MODEL_NAME, MODEL_CHOICE
 
@@ -28,6 +32,7 @@ USER_CONFIG = {
     'llm': 'DeepSeek',
     'openai_api_token': '',
     'huggingface_api_token': '',
+    
     # ChromaDB specific settings
     'chroma_settings': {
         'collection_name': 'new_york_medicare',
@@ -93,6 +98,7 @@ def settings():
         USER_CONFIG['openai_api_token'] = request.form.get("openai_api_token", "")
         USER_CONFIG['huggingface_api_token'] = request.form.get("huggingface_api_token", "")
         
+        
         # Update ChromaDB specific settings if ChromaDB is selected
         if USER_CONFIG['vector_db'] == 'ChromaDB':
             USER_CONFIG['chroma_settings'].update({
@@ -115,7 +121,12 @@ def settings():
         if USER_CONFIG['vector_db'] == 'PineconeDB':
             USER_CONFIG['pinecone_settings'].update({
                 'index_name': request.form.get("pinecone_index", ""),
-                'api_key': request.form.get("pinecone_api_key", "")
+                'api_key': request.form.get("pinecone_api_key", ""),
+                'embedding_provider': request.form.get("pinecone_embedding_provider", "pinecone"),
+                'model': (request.form.get("pinecone_model") 
+                        if request.form.get("pinecone_embedding_provider") == "pinecone"
+                        else request.form.get("openai_model")),
+                'namespace': 'default'
             })
         
         return redirect(url_for("main.dashboard"))
@@ -181,41 +192,88 @@ def configure_embeddings():
         join_option = request.form.get("join_option") == "true"
         separator = request.form.get("separator", " ")
         
-        # Load dataset based on the user selection.
+        # Load dataset (works with both custom and default datasets)
+        try:
+            if USER_CONFIG['dataset'] == "Medicare":
+                data_df = load_medicare_data()
+            else:
+                # Load custom dataset
+                dataset_info = next((d for d in USER_CONFIG.get('custom_datasets', []) 
+                                  if d['name'] == USER_CONFIG['dataset']), None)
+                if dataset_info:
+                    data_df = pd.read_csv(dataset_info['path'], dtype=str)
+                else:
+                    raise ValueError(f"Dataset {USER_CONFIG['dataset']} not found")
+            
+            # Create options dictionary
+            options = {
+                'join_option': request.form.get("join_option") == "true",
+                'separator': request.form.get("separator", " ")
+            }
+
+            # Create text column from selected fields
+            data_df['text'] = create_dynamic_embedding_text(
+                data_df, 
+                selected_fields,
+                options
+            )
+            
+            # Process documents based on selected vector store
+            if USER_CONFIG['vector_db'] == 'PineconeDB':
+                try:
+                    pinecone_handler = PineconeHandler(
+                        api_key=USER_CONFIG['pinecone_settings']['api_key'],
+                        index_name=USER_CONFIG['pinecone_settings']['index_name'],
+                        embedding_provider=USER_CONFIG['pinecone_settings'].get('embedding_provider', 'pinecone'),
+                        model_name=USER_CONFIG['pinecone_settings'].get('model', 'multilingual-e5-large')
+                    )
+                    docs = pinecone_handler.process_documents(data_df)
+                except Exception as e:
+                    return render_template("configure_embeddings_result.html",
+                                        error=f"Pinecone error: {str(e)}",
+                                        fields=[])
+            else:
+                # ChromaDB processing
+                collection = get_or_create_collection(
+                    persist=USER_CONFIG['chroma_settings']['persist_directory'],
+                    collection_name=USER_CONFIG['chroma_settings']['collection_name'],
+                    embedding_model=embedding_model
+                )
+                docs = collection.add_documents(data_df['text'].tolist())
+            
+            return render_template("configure_embeddings_result.html",
+                                success=True,
+                                count=len(docs),
+                                fields=selected_fields)
+                                
+        except Exception as e:
+            return render_template("configure_embeddings_result.html",
+                                error=f"Error processing documents: {str(e)}",
+                                fields=[])
+    
+    # Handle GET request
+    try:
+        # Get available fields from current dataset
         if USER_CONFIG['dataset'] == "Medicare":
             data_df = load_medicare_data()
         else:
-            # Placeholder if additional datasets are added later.
-            return render_template("configure_embeddings_result.html",
-                                   error="Selected dataset not implemented yet.",
-                                   fields=[])
+            dataset_info = next((d for d in USER_CONFIG.get('custom_datasets', []) 
+                              if d['name'] == USER_CONFIG['dataset']), None)
+            if dataset_info:
+                data_df = pd.read_csv(dataset_info['path'], dtype=str)
+            else:
+                return render_template("configure_embeddings_result.html",
+                                    error="Dataset not found",
+                                    fields=[])
         
-        if not selected_fields:
-            return render_template("configure_embeddings_result.html",
-                                   error="Please select at least one field to embed.",
-                                   fields=[])
-        else:
-            print("Selected fields:", selected_fields)
-        
-        # Process documents using the vector store
-        docs = upsert_medicare_documents(
-            collection=get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, embedding_model),
-            data_df=data_df,
-            selected_fields=selected_fields,
-            join_option=join_option,
-            separator=separator
-        )
-        return render_template("configure_embeddings_result.html",
-                               count=len(docs),
-                               fields=selected_fields)
-    
-    # Handle GET request: show the available fields for the selected dataset.
-    if USER_CONFIG['dataset'] == "Medicare":
-        data_df = load_medicare_data()
         available_fields = data_df.columns.tolist()
-    else:
-        available_fields = []
-    return render_template("configure_embeddings.html", available_fields=available_fields)
+        return render_template("configure_embeddings.html", 
+                            available_fields=available_fields)
+        
+    except Exception as e:
+        return render_template("configure_embeddings_result.html",
+                            error=f"Error loading dataset: {str(e)}",
+                            fields=[])
 
 
 # Route: Query Documents
@@ -239,27 +297,32 @@ def chat():
     query = request.args.get("q", "")
     current_llm = USER_CONFIG['llm']
     
-    # Initialize chat history in session if not present
     if 'chat_history' not in session:
         session['chat_history'] = []
 
     if query:
         try:
-            selected_llm = USER_CONFIG['llm'].lower()
-            # if selected_llm == "deepseek":
-            #     from langchain_ollama import ChatOllama
-            #     llm = ChatOllama(model="deepseek-r1", temperature=0.0)
-            # elif selected_llm == "llama2":
-            #     from langchain_ollama import ChatOllama
-            #     llm = ChatOllama(model="llama2", temperature=0.0)
+            # Initialize appropriate retriever based on vector_db setting
+            if USER_CONFIG['vector_db'] == 'PineconeDB':
+                pinecone_handler = PineconeHandler(
+                    api_key=USER_CONFIG['pinecone_settings']['api_key'],
+                    index_name=USER_CONFIG['pinecone_settings']['index_name'],
+                    embedding_provider=USER_CONFIG['pinecone_settings'].get('embedding_provider', 'pinecone'),
+                    model_name=USER_CONFIG['pinecone_settings'].get('model', 'multilingual-e5-large')
+                )
+                retriever = pinecone_handler.get_retriever()
+            else:
+                retriever = collection.as_retriever(search_kwargs={"k": 10})
 
+            # Initialize LLM
+            selected_llm = USER_CONFIG['llm'].lower()
             try:
                 if selected_llm == "openai":
                     from langchain_openai import ChatOpenAI
                     if not os.environ.get("OPENAI_API_KEY"):
                         return jsonify({"error": "OpenAI API key not set"}), 400
                     llm = ChatOpenAI(
-                        model="gpt-4",  # Fixed typo in model name
+                        model="gpt-4",
                         temperature=0,
                         max_tokens=None,
                         timeout=None,
@@ -267,15 +330,15 @@ def chat():
                     )
                 else:
                     from langchain_ollama import ChatOllama
-                    # Fallback to default model if not recognized
                     llm = ChatOllama(model=selected_llm, temperature=0.0)
             except Exception as e:
-                    return jsonify({"error": f"Failed to load model '{selected_llm}': {str(e)}"}), 400
+                return jsonify({"error": f"Failed to load model '{selected_llm}': {str(e)}"}), 400
 
+            # Create QA chain with appropriate retriever
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 chain_type="stuff",
-                retriever=collection.as_retriever(search_kwargs={"k": 10})
+                retriever=retriever
             )
             
             answer = qa_chain.run(query)
@@ -287,7 +350,7 @@ def chat():
             return jsonify({'answer': answer})
             
         except Exception as e:
-            print(f"Error in chat: {str(e)}")  # For debugging
+            print(f"Error in chat: {str(e)}")
             return jsonify({"error": str(e)}), 500
             
     return render_template("chat.html", 

@@ -5,6 +5,13 @@ from pinecone import Pinecone
 from uuid import uuid4
 import pandas as pd
 
+from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.document_loaders import DataFrameLoader
+from pinecone import Pinecone
+from uuid import uuid4
+import pandas as pd
+
 class PineconeHandler:
     def __init__(self, api_key, index_name, embedding_provider='pinecone', model_name='multilingual-e5-large', namespace="default"):
         self.pc = Pinecone(api_key=api_key)
@@ -25,8 +32,14 @@ class PineconeHandler:
     
     def process_documents(self, data_df, text_column='text'):
         """Process DataFrame and create documents for Pinecone"""
+        # Handle NaN values globally
+        data_df = data_df.fillna('')
+        
         # Create documents using DataFrameLoader
-        loader = DataFrameLoader(data_df, page_content_column=text_column)
+        loader = DataFrameLoader(
+            data_df,
+            page_content_column=text_column
+        )
         documents = loader.load()
         
         # Generate UUIDs for documents
@@ -37,7 +50,7 @@ class PineconeHandler:
         
         return documents
     
-    def similarity_search(self, query, k=3):
+    def similarity_search(self, query, k=5):
         """Perform similarity search"""
         return self.vectorstore.similarity_search(query, k=k)
     
