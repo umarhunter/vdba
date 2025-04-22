@@ -6,14 +6,43 @@
     <meta charset="utf-8">
     <title>Upsert Result</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 40px; }
+      body { 
+        font-family: Arial, sans-serif; 
+        margin: 40px;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+      }
+      .success { color: #28a745; }
+      .error { color: #dc3545; }
+      .fields-list {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+      }
       a { text-decoration: none; color: #337ab7; }
       a:hover { text-decoration: underline; }
     </style>
   </head>
   <body>
-    <h1>Upsert Complete</h1>
-    <p>Successfully upserted {{ count }} documents using fields: {{ fields }}</p>
-    <p><a href="{{ url_for('main.index') }}">Return to Dashboard</a></p>
+    {% if error %}
+      <h1 class="error">Error</h1>
+      <p class="error">{{ error }}</p>
+    {% else %}
+      <h1 class="success">Upsert Complete</h1>
+      <p>Successfully upserted {{ count }} documents</p>
+      {% if fields %}
+      <div class="fields-list">
+        <h3>Using fields:</h3>
+        <ul>
+          {% for field in fields %}
+            <li>{{ field }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% endif %}
+    <p><a href="{{ url_for('main.dashboard') }}">Return to Dashboard</a></p>
   </body>
 </html>

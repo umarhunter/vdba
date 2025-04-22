@@ -38,19 +38,25 @@ def get_or_create_collection(persist=CHROMADB_PERSIST_DIR, collection_name=CHROM
     )
     return vectorstore
 
-def create_dynamic_embedding_text(row, selected_fields, field_labels=None):
+def create_dynamic_embedding_text(data_df, selected_fields, options=None):
     """
-    Construct an embedding text string from a DataFrame row using selected fields.
-    If field_labels is provided, each field is prepended with its label.
+    Creates embedding text from selected DataFrame fields.
+    
+    Args:
+        data_df (pd.DataFrame): Input DataFrame
+        selected_fields (list): List of column names to include
+        options (dict): Optional settings like separator and join_option
     """
-    parts = []
-    for field in selected_fields:
-        value = row.get(field, "")
-        if field_labels and field in field_labels:
-            parts.append(f"{field_labels[field]}: {value}")
-        else:
-            parts.append(str(value))
-    return " ".join(parts)
+    if not options:
+        options = {'separator': ' ', 'join_option': True}
+        
+    separator = options.get('separator', ' ')
+    join_option = options.get('join_option', True)
+    
+    if join_option:
+        return data_df[selected_fields].fillna('').astype(str).agg(separator.join, axis=1)
+    else:
+        return data_df[selected_fields].fillna('').astype(str).apply(lambda x: f"{separator}".join(x), axis=1)
 
 def concatenate_fields(row, fields, separator=" "):
     """
@@ -76,6 +82,7 @@ def upsert_medicare_documents(collection, data_df, selected_fields, join_option=
             embedding_text = concatenate_fields(row, selected_fields, separator)
         else:
             embedding_text = create_dynamic_embedding_text(row, selected_fields, field_labels)
+            
         # Create a unique ID (combining NPI and row index)
         unique_id = f"{row.get('Rndrng_NPI', 'unknown')}_{i}" 
         documents.append(Document(page_content=embedding_text, metadata=row.to_dict()))

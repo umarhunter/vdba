@@ -2,35 +2,74 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>VDBA</title>
+    <title>VDBA Dashboard</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 40px; }
-      ul { list-style-type: none; padding: 0; }
-      li { margin-bottom: 10px; }
-      a { text-decoration: none; color: #337ab7; }
-      a:hover { text-decoration: underline; }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+      }
+      .dashboard-container {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .feature-list {
+        list-style-type: none;
+        padding: 0;
+      }
+      .feature-item {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+      }
+      .feature-title {
+        color: #2c3e50;
+        margin-top: 0;
+        font-weight: 500;
+      }
+      .feature-link {
+        display: inline-block;
+        margin-top: 10px;
+        color: #007bff;
+        text-decoration: none;
+      }
+      .feature-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
-    <h1>Vector Database Analysis Dashboard</h1>
-    <p>Welcome to the VDBA! This tool allows you to:</p>
-    <ul>
-      <li>
-        <strong>Select Fields for Embeddings:</strong> Select dataset rows and the fields to embed.
-        <br><a href="{{ url_for('main.configure_embeddings') }}">Configure Embedding Fields</a>
-      </li>
-      <li>
-        <strong>Query Documents:</strong> Search through the embedded dataset.
-        <br><a href="{{ url_for('main.query_docs') }}">Query Documents</a>
-      </li>
-      <li>
-        <strong>Chat with the LLM:</strong> Interact with a chatbot powered by your chosen LLM.
-        <br><a href="{{ url_for('main.chat') }}">Chat with the LLM</a>
-      </li>
-      <li>
-        <strong>Settings:</strong>
-        <br><a href="{{ url_for('main.settings') }}">Configure Application Settings</a>
-      </li>
-    </ul>
+    <div class="dashboard-container">
+      <h1>Vector Database Analysis Dashboard</h1>
+      <p>Welcome to the VDBA! This tool allows you to:</p>
+      <ul class="feature-list">
+        <li class="feature-item">
+          <h3 class="feature-title">Select Fields for Embeddings</h3>
+          <p>Select dataset rows and the fields to embed.</p>
+          <a href="{{ url_for('main.configure_embeddings') }}" class="feature-link">Configure Embedding Fields →</a>
+        </li>
+        <li class="feature-item">
+          <h3 class="feature-title">Query Documents</h3>
+          <p>Search through the embedded dataset.</p>
+          <a href="{{ url_for('main.query_docs') }}" class="feature-link">Query Documents →</a>
+        </li>
+        <li class="feature-item">
+          <h3 class="feature-title">Chat with the LLM</h3>
+          <p>Interact with a chatbot powered by your chosen LLM.</p>
+          <a href="{{ url_for('main.chat') }}" class="feature-link">Chat with the LLM →</a>
+        </li>
+        <li class="feature-item">
+          <h3 class="feature-title">Settings</h3>
+          <p>Configure application settings and preferences.</p>
+          <a href="{{ url_for('main.settings') }}" class="feature-link">Configure Settings →</a>
+        </li>
+      </ul>
+    </div>
   </body>
 </html>
