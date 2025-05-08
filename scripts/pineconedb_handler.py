@@ -5,13 +5,6 @@ from pinecone import Pinecone
 from uuid import uuid4
 import pandas as pd
 
-from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.document_loaders import DataFrameLoader
-from pinecone import Pinecone
-from uuid import uuid4
-import pandas as pd
-
 class PineconeHandler:
     def __init__(self, api_key, index_name, embedding_provider='pinecone', model_name='multilingual-e5-large', namespace="default"):
         self.pc = Pinecone(api_key=api_key)
