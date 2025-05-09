@@ -3,11 +3,9 @@ from langchain_community.vectorstores.pgvector import PGVector
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_openai import OpenAIEmbeddings
 from uuid import uuid4
+from tqdm import tqdm
 
 class PGVectorHandler:
-    """
-    A class to handle PGVector operations including document processing and similarity search.
-    """
     def __init__(self, connection_string, collection_name, embedding_model="text-embedding-ada-002"):
         self.connection_string = connection_string
         self.collection_name = collection_name
@@ -18,15 +16,29 @@ class PGVectorHandler:
             embedding_function=self.embeddings
         )
 
-    def process_documents(self, data_df, text_column='text', max_docs=16000):
-        """Process DataFrame and add documents to PGVector. Limit to max_docs."""
+    def process_documents(self, data_df, text_column='text', batch_size=100):
+        """Process DataFrame and add documents to PGVector with batching."""
+        # Handle NaN values
         data_df = data_df.fillna('')
-        if len(data_df) > max_docs:
-            raise ValueError(f"PGVector (Docker) supports up to {max_docs} documents. Provided: {len(data_df)}")
+        
+        # Create documents using DataFrameLoader
         loader = DataFrameLoader(data_df, page_content_column=text_column)
         documents = loader.load()
+        
+        # Generate UUIDs for all documents
         uuids = [str(uuid4()) for _ in range(len(documents))]
-        self.vectorstore.add_documents(documents=documents, ids=uuids)
+        
+        # Process in batches
+        for i in tqdm(range(0, len(documents), batch_size), desc="Processing batches"):
+            batch_docs = documents[i:i + batch_size]
+            batch_ids = uuids[i:i + batch_size]
+            
+            try:
+                self.vectorstore.add_documents(documents=batch_docs, ids=batch_ids)
+            except Exception as e:
+                print(f"Error processing batch {i//batch_size}: {str(e)}")
+                continue
+        
         return documents
 
     def similarity_search(self, query, k=5):
