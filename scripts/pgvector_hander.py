@@ -1,45 +1,50 @@
 import pandas as pd
-from langchain_community.vectorstores.pgvector import PGVector
+
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_openai import OpenAIEmbeddings
+from langchain_postgres import PGVector
+from langchain_huggingface import HuggingFaceEmbeddings
 from uuid import uuid4
 from tqdm import tqdm
 
 class PGVectorHandler:
-    def __init__(self, connection_string, collection_name, embedding_model="text-embedding-ada-002"):
+    def __init__(self, connection_string, collection_name, embedding_model="all-MiniLM-L6-v2"):
+        """Initialize PGVector handler with HuggingFace embeddings."""
         self.connection_string = connection_string
         self.collection_name = collection_name
-        self.embeddings = OpenAIEmbeddings(model=embedding_model)
-        self.vectorstore = PGVector(
-            connection_string=connection_string,
+        
+        # Initialize HuggingFace embeddings
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=embedding_model
+        )
+            
+        self.vector_store = PGVector(
+            embeddings=self.embeddings,
             collection_name=collection_name,
-            embedding_function=self.embeddings
+            connection=connection_string,
+            use_jsonb=True
         )
 
     def process_documents(self, data_df, text_column='text', batch_size=100):
         """Process DataFrame and add documents to PGVector with batching."""
-        # Handle NaN values
-        data_df = data_df.fillna('')
-        
+
+        # Add id column based on index
+        data_df['id'] = data_df.index.astype(str)  # Ensure ID is also string type
+        data_df = data_df.fillna('')  # Replace all NaN values with empty strings
+
         # Create documents using DataFrameLoader
         loader = DataFrameLoader(data_df, page_content_column=text_column)
         documents = loader.load()
         
-        # Generate UUIDs for all documents
+        # Generate all UUIDs upfront
         uuids = [str(uuid4()) for _ in range(len(documents))]
         
-        # Process in batches
-        for i in tqdm(range(0, len(documents), batch_size), desc="Processing batches"):
-            batch_docs = documents[i:i + batch_size]
-            batch_ids = uuids[i:i + batch_size]
-            
-            try:
-                self.vectorstore.add_documents(documents=batch_docs, ids=batch_ids)
-            except Exception as e:
-                print(f"Error processing batch {i//batch_size}: {str(e)}")
-                continue
-        
-        return documents
+        # after doing some research it appears that there is a psycopg3 driver limit to parameters (65,535) so we need to batch the inserts
+        batch_size = 100  # Adjust as needed
+        for i in range(0, len(documents), batch_size):
+            batch_docs = documents[i:i+batch_size]
+            batch_ids = uuids[i:i+batch_size]
+            self.vector_store.add_documents(documents=batch_docs, ids=batch_ids)
 
     def similarity_search(self, query, k=5):
         """Perform similarity search."""

@@ -41,14 +41,18 @@ USER_CONFIG = {
         'collection_metadata': {'description': 'Medicare provider data'},
         'embedding_function': 'sentence-transformers/all-MiniLM-L12-v2',
     },
+
+    # PineconeDB specific settings
     'pinecone_settings': {
         'index_name': '',
         'api_key': '',
     },
+
+    # PGVectorDB specific settings
     'pgvector_settings': {
         'connection_string': 'postgresql+psycopg://langchain:langchain@localhost:6024/langchain',
         'collection_name': 'documents',
-        'batch_size': 100,
+        'batch_size': 500,
     }
 }
 
@@ -135,6 +139,25 @@ def settings():
                 'namespace': 'default'
             })
         
+        # Update PGVector settings if PGVectorDB is selected
+        if USER_CONFIG['vector_db'] == 'PGVectorDB':
+            USER_CONFIG['pgvector_settings'].update({
+                'connection_string': request.form.get("pgvector_connection", 
+                    "postgresql+psycopg://langchain:langchain@localhost:6024/langchain"),
+                'collection_name': request.form.get("pgvector_collection", "documents"),
+                'batch_size': int(request.form.get("pgvector_batch_size", 500))
+            })
+            
+            try:
+                # Test connection with new settings
+                pgvector_handler = PGVectorHandler(
+                    connection_string=USER_CONFIG['pgvector_settings']['connection_string'],
+                    collection_name=USER_CONFIG['pgvector_settings']['collection_name'],
+                    embedding_model=USER_CONFIG['embedding_model']
+                )
+            except Exception as e:
+                print(f"Warning: Could not initialize PGVector with new settings: {str(e)}")
+
         return redirect(url_for("main.dashboard"))
     else:
         available_models = get_available_llm_models()
@@ -225,6 +248,7 @@ def configure_embeddings():
             )
             
             # Process documents based on selected vector store
+            # PineconeDB processing
             if USER_CONFIG['vector_db'] == 'PineconeDB':
                 try:
                     pinecone_handler = PineconeHandler(
@@ -238,15 +262,22 @@ def configure_embeddings():
                     return render_template("configure_embeddings_result.html",
                                         error=f"Pinecone error: {str(e)}",
                                         fields=[])
+            # PGVector processing
             elif USER_CONFIG['vector_db'] == 'PGVectorDB':
-                # PGVector Processing
-                collection_name = USER_CONFIG['pgvector_settings']['collection_name']
-                connection_string = USER_CONFIG['pgvector_settings']['connection_string']
-                pgvector_handler = PGVectorHandler(
-                    connection_string=connection_string,
-                    collection_name=collection_name,
-                    embedding_model=USER_CONFIG['embedding_model']
-                )
+                try:
+                    pgvector_handler = PGVectorHandler(
+                        connection_string=USER_CONFIG['pgvector_settings']['connection_string'],
+                        collection_name=USER_CONFIG['pgvector_settings']['collection_name'],
+                        embedding_model=USER_CONFIG['embedding_model']
+                    )
+                    docs = pgvector_handler.process_documents(
+                        data_df,
+                        batch_size=USER_CONFIG['pgvector_settings']['batch_size']
+                    )
+                except Exception as e:
+                    return render_template("configure_embeddings_result.html",
+                                        error=f"PGVector error: {str(e)}",
+                                        fields=[])
             else:
                 # ChromaDB processing
                 collection = get_or_create_collection(
@@ -255,40 +286,18 @@ def configure_embeddings():
                     embedding_model=embedding_model
                 )
                 docs = collection.add_documents(data_df['text'].tolist())
-            
-            return render_template("configure_embeddings_result.html",
+                return render_template("configure_embeddings_result.html",
                                 success=True,
                                 count=len(docs),
                                 fields=selected_fields)
                                 
         except Exception as e:
+            import traceback
+            error_traceback = traceback.format_exc()
             return render_template("configure_embeddings_result.html",
-                                error=f"Error processing documents: {str(e)}",
+                                error=f"Error processing documents: {str(e)}\n{error_traceback}",
                                 fields=[])
-    
-    # Handle GET request
-    try:
-        # Get available fields from current dataset
-        if USER_CONFIG['dataset'] == "Medicare":
-            data_df = load_medicare_data()
-        else:
-            dataset_info = next((d for d in USER_CONFIG.get('custom_datasets', []) 
-                              if d['name'] == USER_CONFIG['dataset']), None)
-            if dataset_info:
-                data_df = pd.read_csv(dataset_info['path'], dtype=str)
-            else:
-                return render_template("configure_embeddings_result.html",
-                                    error="Dataset not found",
-                                    fields=[])
-        
-        available_fields = data_df.columns.tolist()
-        return render_template("configure_embeddings.html", 
-                            available_fields=available_fields)
-        
-    except Exception as e:
-        return render_template("configure_embeddings_result.html",
-                            error=f"Error loading dataset: {str(e)}",
-                            fields=[])
+
 
 
 # Route: Query Documents
@@ -318,7 +327,15 @@ def chat():
     if query:
         try:
             # Initialize appropriate retriever based on vector_db setting
-            if USER_CONFIG['vector_db'] == 'PineconeDB':
+            if USER_CONFIG['vector_db'] == 'PGVectorDB':
+                pgvector_handler = PGVectorHandler(
+                    connection_string=USER_CONFIG['pgvector_settings']['connection_string'],
+                    collection_name=USER_CONFIG['pgvector_settings']['collection_name'],
+                    embedding_model=USER_CONFIG['embedding_model']  # Using global embedding model
+                )
+                retriever = pgvector_handler.get_retriever()
+
+            elif USER_CONFIG['vector_db'] == 'PineconeDB':
                 pinecone_handler = PineconeHandler(
                     api_key=USER_CONFIG['pinecone_settings']['api_key'],
                     index_name=USER_CONFIG['pinecone_settings']['index_name'],
@@ -327,6 +344,7 @@ def chat():
                 )
                 retriever = pinecone_handler.get_retriever()
             else:
+                # ChromaDB
                 retriever = collection.as_retriever(search_kwargs={"k": 10})
 
             # Initialize LLM

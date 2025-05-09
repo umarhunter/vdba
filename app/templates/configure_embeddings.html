@@ -65,11 +65,45 @@
       .back-link:hover {
         color: #343a40;
       }
+       .current-db-info {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+      }
+      
+      .db-name {
+        font-weight: bold;
+        color: #0056b3;
+      }
+      
+      .db-details {
+        margin-top: 8px;
+        font-size: 0.9em;
+        color: #666;
+      }
     </style>
   </head>
   <body>
     <div class="config-container">
       <h1>Configure Embedding Fields</h1>
+      <div class="current-db-info">
+        <div class="db-name">Current Vector Database: {{ config.vector_db }}</div>
+        <div class="db-details">
+            {% if config.vector_db == 'ChromaDB' %}
+                Collection: {{ config.chroma_settings.collection_name }}
+                <br>
+                Directory: {{ config.chroma_settings.persist_directory }}
+            {% elif config.vector_db == 'PineconeDB' %}
+                Index: {{ config.pinecone_settings.index_name }}
+            {% elif config.vector_db == 'PGVectorDB' %}  <!-- Changed from PGVector to PGVectorDB -->
+                Collection: {{ config.pgvector_settings.collection_name }}
+                <br>
+                Connection: {{ config.pgvector_settings.connection_string }}
+            {% endif %}
+        </div>
+    </div>
       <form method="post" onsubmit="showSpinner()">
         <div class="field-list">
           <h2>Available Fields</h2>
