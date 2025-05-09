@@ -258,6 +258,10 @@ def configure_embeddings():
                         model_name=USER_CONFIG['pinecone_settings'].get('model', 'multilingual-e5-large')
                     )
                     docs = pinecone_handler.process_documents(data_df)
+                    return render_template("configure_embeddings_result.html",
+                            success=True,
+                            count=len(docs),
+                            fields=selected_fields)
                 except Exception as e:
                     return render_template("configure_embeddings_result.html",
                                         error=f"Pinecone error: {str(e)}",
@@ -274,6 +278,10 @@ def configure_embeddings():
                         data_df,
                         batch_size=USER_CONFIG['pgvector_settings']['batch_size']
                     )
+                    return render_template("configure_embeddings_result.html",
+                                           success=True,
+                                           count=len(docs),
+                                           fields=selected_fields)
                 except Exception as e:
                     return render_template("configure_embeddings_result.html",
                                         error=f"PGVector error: {str(e)}",
@@ -287,9 +295,9 @@ def configure_embeddings():
                 )
                 docs = collection.add_documents(data_df['text'].tolist())
                 return render_template("configure_embeddings_result.html",
-                                success=True,
-                                count=len(docs),
-                                fields=selected_fields)
+                                       success=True,
+                                       count=len(docs),
+                                       fields=selected_fields)
                                 
         except Exception as e:
             import traceback
@@ -297,7 +305,31 @@ def configure_embeddings():
             return render_template("configure_embeddings_result.html",
                                 error=f"Error processing documents: {str(e)}\n{error_traceback}",
                                 fields=[])
-
+    
+    # Handle GET request
+    try:
+        # Get available fields from current dataset
+        if USER_CONFIG['dataset'] == "Medicare":
+            data_df = load_medicare_data()
+        else:
+            dataset_info = next((d for d in USER_CONFIG.get('custom_datasets', []) 
+                              if d['name'] == USER_CONFIG['dataset']), None)
+            if dataset_info:
+                data_df = pd.read_csv(dataset_info['path'], dtype=str)
+            else:
+                return render_template("configure_embeddings_result.html",
+                                    error="Dataset not found",
+                                    fields=[])
+        
+        available_fields = data_df.columns.tolist()
+        return render_template("configure_embeddings.html", 
+                            available_fields=available_fields,
+                            config=USER_CONFIG)
+        
+    except Exception as e:
+        return render_template("configure_embeddings_result.html",
+                            error=f"Error loading dataset: {str(e)}",
+                            fields=[])
 
 
 # Route: Query Documents
