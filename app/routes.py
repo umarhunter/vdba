@@ -21,6 +21,7 @@ from scripts.chromadb_handler import (
     concatenate_fields
 )
 from scripts.pineconedb_handler import PineconeHandler
+from scripts.pgvector_hander import PGVectorHandler
 from scripts.data_loader import load_medicare_data
 from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDDING_MODEL_NAME, MODEL_CHOICE
 
@@ -43,6 +44,11 @@ USER_CONFIG = {
     'pinecone_settings': {
         'index_name': '',
         'api_key': '',
+    },
+    'pgvector_settings': {
+        'connection_string': 'postgresql+psycopg://langchain:langchain@localhost:6024/langchain',
+        'collection_name': 'documents',
+        'batch_size': 100,
     }
 }
 
@@ -232,6 +238,15 @@ def configure_embeddings():
                     return render_template("configure_embeddings_result.html",
                                         error=f"Pinecone error: {str(e)}",
                                         fields=[])
+            elif USER_CONFIG['vector_db'] == 'PGVectorDB':
+                # PGVector Processing
+                collection_name = USER_CONFIG['pgvector_settings']['collection_name']
+                connection_string = USER_CONFIG['pgvector_settings']['connection_string']
+                pgvector_handler = PGVectorHandler(
+                    connection_string=connection_string,
+                    collection_name=collection_name,
+                    embedding_model=USER_CONFIG['embedding_model']
+                )
             else:
                 # ChromaDB processing
                 collection = get_or_create_collection(
