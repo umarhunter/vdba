@@ -41,7 +41,8 @@ class PineconeHandler:
         # Add documents to vectorstore
         self.vectorstore.add_documents(documents=documents, ids=uuids)
         
-        return documents
+        doc_size = len(data_df)
+        return doc_size
     
     def similarity_search(self, query, k=5):
         """Perform similarity search"""

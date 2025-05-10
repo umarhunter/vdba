@@ -13,7 +13,7 @@ def load_medicare_data():
     # Construct the path to the data file
     # data_path = os.path.join(PROJECT_ROOT, 'vdba', 'data', 'insurance', 'medicare', '2022', 'medicare.csv')
     data_path = os.path.join(PROJECT_ROOT, 'vdba', 'data', 'processed', 'sample_ny_data.csv')
-    medicare_data = pd.read_csv(data_path, dtype='str').head(100)
+    medicare_data = pd.read_csv(data_path, dtype='str')
     # ny_data = medicare_data[medicare_data['Rndrng_Prvdr_State_Abrvtn'] == 'NY']
     # ny_data_sample = ny_data.sample(n=50000, random_state=42)
     return medicare_data

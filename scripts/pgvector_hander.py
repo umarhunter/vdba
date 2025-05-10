@@ -41,10 +41,15 @@ class PGVectorHandler:
         
         # after doing some research it appears that there is a psycopg3 driver limit to parameters (65,535) so we need to batch the inserts
         batch_size = 100  # Adjust as needed
+
+        
         for i in range(0, len(documents), batch_size):
             batch_docs = documents[i:i+batch_size]
             batch_ids = uuids[i:i+batch_size]
             self.vector_store.add_documents(documents=batch_docs, ids=batch_ids)
+            
+        doc_size = len(data_df)
+        return doc_size
 
     def similarity_search(self, query, k=5):
         """Perform similarity search."""

@@ -257,10 +257,10 @@ def configure_embeddings():
                         embedding_provider=USER_CONFIG['pinecone_settings'].get('embedding_provider', 'pinecone'),
                         model_name=USER_CONFIG['pinecone_settings'].get('model', 'multilingual-e5-large')
                     )
-                    docs = pinecone_handler.process_documents(data_df)
+                    doc_size = pinecone_handler.process_documents(data_df)
                     return render_template("configure_embeddings_result.html",
                             success=True,
-                            count=len(docs),
+                            count=doc_size,
                             fields=selected_fields)
                 except Exception as e:
                     return render_template("configure_embeddings_result.html",
@@ -274,13 +274,13 @@ def configure_embeddings():
                         collection_name=USER_CONFIG['pgvector_settings']['collection_name'],
                         embedding_model=USER_CONFIG['embedding_model']
                     )
-                    docs = pgvector_handler.process_documents(
+                    doc_size = pgvector_handler.process_documents(
                         data_df,
                         batch_size=USER_CONFIG['pgvector_settings']['batch_size']
                     )
                     return render_template("configure_embeddings_result.html",
                                            success=True,
-                                           count=len(docs),
+                                           count=doc_size,
                                            fields=selected_fields)
                 except Exception as e:
                     return render_template("configure_embeddings_result.html",
