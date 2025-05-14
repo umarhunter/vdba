@@ -13,16 +13,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from werkzeug.utils import secure_filename
 
-from scripts.chromadb_handler import (
-    initialize_chroma_client,
-    get_or_create_collection,
-    upsert_medicare_documents,
-    create_dynamic_embedding_text,
-    concatenate_fields
-)
+from scripts.chromadb_handler import ChromaDBHandler
 from scripts.pineconedb_handler import PineconeHandler
 from scripts.pgvector_hander import PGVectorHandler
 from scripts.data_loader import load_medicare_data
+from scripts.text_utils import create_dynamic_embedding_text
+
 from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDDING_MODEL_NAME, MODEL_CHOICE
 
 # Define the USER_CONFIG global variable with default settings.
@@ -119,13 +115,18 @@ def settings():
                 }
             })
             
-            # Reinitialize ChromaDB collection with new settings
-            global collection
-            collection = get_or_create_collection(
-                persist=USER_CONFIG['chroma_settings']['persist_directory'],
-                collection_name=USER_CONFIG['chroma_settings']['collection_name'],
-                embedding_model=embedding_model
-            )
+            try:
+                # Initialize ChromaDB handler with new settings
+                chromadb_handler = ChromaDBHandler(
+                    persist_directory=USER_CONFIG['chroma_settings']['persist_directory'],
+                    collection_name=USER_CONFIG['chroma_settings']['collection_name'],
+                    embedding_model=USER_CONFIG['embedding_model']
+                )
+                # Update the global collection reference for use in other routes
+                global collection
+                collection = chromadb_handler.vector_store
+            except Exception as e:
+                print(f"Warning: Could not initialize ChromaDB with new settings: {str(e)}")
         
         # Update Pinecone settings if PineconeDB is selected
         if USER_CONFIG['vector_db'] == 'PineconeDB':
@@ -288,16 +289,24 @@ def configure_embeddings():
                                         fields=[])
             else:
                 # ChromaDB processing
-                collection = get_or_create_collection(
-                    persist=USER_CONFIG['chroma_settings']['persist_directory'],
-                    collection_name=USER_CONFIG['chroma_settings']['collection_name'],
-                    embedding_model=embedding_model
-                )
-                docs = collection.add_documents(data_df['text'].tolist())
-                return render_template("configure_embeddings_result.html",
+                try:
+                    chromadb_handler = ChromaDBHandler(
+                        persist_directory=USER_CONFIG['chroma_settings']['persist_directory'],
+                        collection_name=USER_CONFIG['chroma_settings']['collection_name'],
+                        embedding_model=USER_CONFIG['embedding_model']
+                    )
+                    doc_size = chromadb_handler.process_documents(
+                        data_df,
+                        text_column='text'
+                    )
+                    return render_template("configure_embeddings_result.html",
                                        success=True,
-                                       count=len(docs),
+                                       count=doc_size,
                                        fields=selected_fields)
+                except Exception as e:
+                    return render_template("configure_embeddings_result.html",
+                                        error=f"ChromaDB error: {str(e)}",
+                                        fields=[])
                                 
         except Exception as e:
             import traceback
@@ -337,14 +346,39 @@ def configure_embeddings():
 def query_docs():
     query_text = request.args.get("q", "")
     if query_text:
-        local_embedding = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-        coll = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, local_embedding)
-        results = coll.similarity_search(query=query_text,k=1)
-        return render_template("query.html", query=query_text, results=results)
-    else:
-        # Render the query form if no query parameter is provided.
-        return render_template("query.html", query="", results=None)
+        try:
+            # Initialize appropriate handler based on vector_db setting
+            if USER_CONFIG['vector_db'] == 'PGVectorDB':
+                handler = PGVectorHandler(
+                    connection_string=USER_CONFIG['pgvector_settings']['connection_string'],
+                    collection_name=USER_CONFIG['pgvector_settings']['collection_name'],
+                    embedding_model=USER_CONFIG['embedding_model']
+                )
+            elif USER_CONFIG['vector_db'] == 'PineconeDB':
+                handler = PineconeHandler(
+                    api_key=USER_CONFIG['pinecone_settings']['api_key'],
+                    index_name=USER_CONFIG['pinecone_settings']['index_name'],
+                    embedding_provider=USER_CONFIG['pinecone_settings'].get('embedding_provider', 'pinecone'),
+                    model_name=USER_CONFIG['pinecone_settings'].get('model', 'multilingual-e5-large')
+                )
+            else:
+                # Default to ChromaDB
+                handler = ChromaDBHandler(
+                    persist_directory=USER_CONFIG['chroma_settings']['persist_directory'],
+                    collection_name=USER_CONFIG['chroma_settings']['collection_name'],
+                    embedding_model=USER_CONFIG['embedding_model']
+                )
 
+            # Perform similarity search using the handler
+            results = handler.similarity_search(query_text, k=5)
+            return render_template("query.html", query=query_text, results=results)
+
+        except Exception as e:
+            error_message = f"Error performing search: {str(e)}"
+            return render_template("query.html", query=query_text, error=error_message)
+    else:
+        # Render the query form if no query parameter is provided
+        return render_template("query.html", query="", results=None)
 
 
 # Route: Chat with LLM
