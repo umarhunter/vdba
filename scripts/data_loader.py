@@ -20,3 +20,15 @@ def load_medicare_data():
     # sampled_data.to_csv(data_path, index=False)
     
     return sampled_medicare_data
+
+def load_cuad_data():
+    # Load the data from the csv files
+    PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+    # Construct the path to the data file
+    data_path = os.path.join(PROJECT_ROOT, 'vdba', 'data', 'legal', 'CUAD_v1', 'master_clauses.csv')
+    
+    # Read the full dataset
+    cuad_data = pd.read_csv(data_path, dtype='str')
+    
+    return cuad_data
