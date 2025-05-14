@@ -10,46 +10,37 @@ from langchain_core.documents import Document
 from uuid import uuid4
 
 class ChromaDBHandler:
-    def __init__(self, persist_directory, collection_name, embedding_model="sentence-transformers/all-MiniLM-L6-v2"):
-        """Initialize ChromaDB handler with GPU-enabled embeddings if available."""
+    def __init__(self, persist_directory, collection_name, embedding_model="all-MiniLM-L6-v2"):
+        """Initialize ChromaDB handler with optimized embeddings."""
         self.persist_directory = persist_directory
         self.collection_name = collection_name
         
-        # Ensure the model is downloaded
-        try:
-            # This will download the model if it's not already cached
-            _ = SentenceTransformer(embedding_model)
-            print(f"Successfully loaded embedding model: {embedding_model}")
-        except Exception as e:
-            print(f"Error loading model: {str(e)}")
-            # Fallback to a simpler model if available
-            embedding_model = "sentence-transformers/all-MiniLM-L6-v2"
-            print(f"Falling back to default model: {embedding_model}")
+        # Get device for optimized compute
+        device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+        print(f"Using device: {device}")
         
-        # Detect best available device
-        if torch.cuda.is_available():
-            device = "cuda"
-            print(f"Using GPU for ChromaDB: {torch.cuda.get_device_name(0)}")
-        elif torch.backends.mps.is_available():
-            device = "mps"
-            print("Using Apple Silicon GPU for ChromaDB")
-        else:
-            device = "cpu"
-            print("Using CPU for ChromaDB embeddings")
-
-        # Initialize HuggingFace embeddings
+        # Initialize HuggingFace embeddings with device
         self.embeddings = HuggingFaceEmbeddings(
             model_name=embedding_model,
             model_kwargs={'device': device},
-            encode_kwargs={'normalize_embeddings': False},
-            cache_folder=os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+            encode_kwargs={'normalize_embeddings': True},
+            show_progress=True
         )
+        print(f"Model {embedding_model} loaded successfully on {device}")
+
+        # you could also use psutil to calculate available memory 
+        # to determine which chromadb client to use
+
+        # Create persist directory if it doesn't exist
+        os.makedirs(self.persist_directory, exist_ok=True)
+
+        persistent_client = chromadb.PersistentClient(path=self.persist_directory) # use PersistentClient for larger datasets
+        collection = persistent_client.get_or_create_collection(self.collection_name)
         
-        # Initialize vector store
         self.vector_store = Chroma(
-            persist_directory=persist_directory,
+            client=persistent_client,
+            collection_name=self.collection_name,
             embedding_function=self.embeddings,
-            collection_name=collection_name
         )
         
     def process_documents(self, data_df, text_column='text'):

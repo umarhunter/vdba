@@ -19,23 +19,21 @@ from scripts.pgvector_hander import PGVectorHandler
 from scripts.data_loader import load_medicare_data
 from scripts.text_utils import create_dynamic_embedding_text
 
-from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDDING_MODEL_NAME, MODEL_CHOICE
-
 # Define the USER_CONFIG global variable with default settings.
 USER_CONFIG = {
     'dataset': 'Medicare',
     'vector_db': 'ChromaDB',
     'embedding_model': 'sentence-transformers/all-MiniLM-L6-v2',
-    'llm': 'DeepSeek',
+    'llm': 'deepseek-r1',
     'openai_api_token': '',
     'huggingface_api_token': '',
     
     # ChromaDB specific settings
     'chroma_settings': {
-        'collection_name': 'new_york_medicare',
+        'collection_name': 'medicare',
         'persist_directory': './chroma_db',
         'collection_metadata': {'description': 'Medicare provider data'},
-        'embedding_function': 'sentence-transformers/all-MiniLM-L12-v2',
+        'embedding_function': 'sentence-transformers/all-MiniLM-L6-v2',
     },
 
     # PineconeDB specific settings
@@ -395,9 +393,15 @@ def chat():
                     model_name=USER_CONFIG['pinecone_settings'].get('model', 'multilingual-e5-large')
                 )
                 retriever = pinecone_handler.get_retriever()
+
             else:
                 # ChromaDB
-                retriever = collection.as_retriever(search_kwargs={"k": 10})
+                chromadb_handler = ChromaDBHandler(
+                    persist_directory=USER_CONFIG['chroma_settings']['persist_directory'],
+                    collection_name=USER_CONFIG['chroma_settings']['collection_name'],
+                    embedding_model=USER_CONFIG['embedding_model']
+                )
+                retriever = chromadb_handler.get_retriever()
 
             # Initialize LLM
             selected_llm = USER_CONFIG['llm'].lower()
