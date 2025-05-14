@@ -25,7 +25,7 @@ from config.config import CHROMADB_COLLECTION_NAME, CHROMADB_PERSIST_DIR, EMBEDD
 USER_CONFIG = {
     'dataset': 'Medicare',
     'vector_db': 'ChromaDB',
-    'embedding_model': 'all-mini',
+    'embedding_model': 'sentence-transformers/all-MiniLM-L6-v2',
     'llm': 'DeepSeek',
     'openai_api_token': '',
     'huggingface_api_token': '',
@@ -85,7 +85,7 @@ def settings():
         # Update basic settings
         USER_CONFIG['dataset'] = request.form.get("dataset", "Medicare")
         USER_CONFIG['vector_db'] = request.form.get("vector_db", "ChromaDB")
-        USER_CONFIG['embedding_model'] = request.form.get("embedding_model", "all-mini")
+        USER_CONFIG['embedding_model'] = request.form.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2")
         USER_CONFIG['llm'] = request.form.get("llm", "DeepSeek")
         USER_CONFIG['openai_api_token'] = request.form.get("openai_api_token", "")
         USER_CONFIG['huggingface_api_token'] = request.form.get("huggingface_api_token", "")
