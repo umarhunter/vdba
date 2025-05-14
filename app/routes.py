@@ -84,7 +84,7 @@ def settings():
         USER_CONFIG['dataset'] = request.form.get("dataset", "Medicare")
         USER_CONFIG['vector_db'] = request.form.get("vector_db", "ChromaDB")
         USER_CONFIG['embedding_model'] = request.form.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2")
-        USER_CONFIG['llm'] = request.form.get("llm", "DeepSeek")
+        USER_CONFIG['llm'] = request.form.get("llm", "deepseek-r1")
         USER_CONFIG['openai_api_token'] = request.form.get("openai_api_token", "")
         USER_CONFIG['huggingface_api_token'] = request.form.get("huggingface_api_token", "")
         
