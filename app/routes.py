@@ -54,20 +54,6 @@ USER_CONFIG = {
 
 main = Blueprint("main", __name__)
 
-# Initialize the ChromaDB client and embedding function.
-client = initialize_chroma_client()
-
-model_name = "sentence-transformers/all-MiniLM-L12-v2"
-model_kwargs = {'device': 'cpu'}
-encode_kwargs = {'normalize_embeddings': False}
-
-embedding_model = HuggingFaceEmbeddings(
-    model_name=EMBEDDING_MODEL_NAME,
-    model_kwargs=model_kwargs,
-    encode_kwargs=encode_kwargs
-)
-collection = get_or_create_collection(CHROMADB_PERSIST_DIR, CHROMADB_COLLECTION_NAME, embedding_model)
-
 # Route: Home page
 @main.route("/")
 def index():

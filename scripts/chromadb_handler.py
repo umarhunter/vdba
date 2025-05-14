@@ -1,5 +1,6 @@
 # chromadb_handler.py
 import chromadb
+import torch
 from chromadb.config import Settings
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -8,21 +9,35 @@ from uuid import uuid4
 
 class ChromaDBHandler:
     def __init__(self, persist_directory, collection_name, embedding_model="all-MiniLM-L6-v2"):
-        """Initialize ChromaDB handler with HuggingFace embeddings."""
+        """Initialize ChromaDB handler with GPU-enabled embeddings if available."""
         self.persist_directory = persist_directory
         self.collection_name = collection_name
         
-        # Initialize HuggingFace embeddings
+        # Detect best available device
+        if torch.cuda.is_available():
+            device = "cuda"
+            print(f"Using GPU for ChromaDB: {torch.cuda.get_device_name(0)}")
+        elif torch.backends.mps.is_available():
+            device = "mps"
+            print("Using Apple Silicon GPU for ChromaDB")
+        else:
+            device = "cpu"
+            print("Using CPU for ChromaDB embeddings")
+
+        # Initialize HuggingFace embeddings with detected device
         self.embeddings = HuggingFaceEmbeddings(
-            model_name=embedding_model
+            model_name=embedding_model,
+            model_kwargs={'device': device},
+            encode_kwargs={'normalize_embeddings': False}
         )
-            
+        
+        # Initialize vector store
         self.vector_store = Chroma(
             persist_directory=persist_directory,
             embedding_function=self.embeddings,
             collection_name=collection_name
         )
-
+        
     def process_documents(self, data_df, text_column='text'):
         """Process DataFrame and add documents to ChromaDB."""
         # Convert text list to Document objects with IDs
