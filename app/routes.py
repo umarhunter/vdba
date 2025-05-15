@@ -466,7 +466,9 @@ def chat():
         except Exception as e:
             print(f"Error in chat: {str(e)}")
             return jsonify({"error": str(e)}), 500
-            
+        
+    current_vector_db = USER_CONFIG['vector_db']  # pass the vector_db to the template
     return render_template("chat.html", 
                          current_llm=current_llm,
+                         current_vector_db=current_vector_db,
                          chat_history=session.get('chat_history', []))

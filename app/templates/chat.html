@@ -179,14 +179,40 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+      .current-settings {
+        background: white;
+        padding: 12px;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 20px;
+    }
+
+      .setting-item {
+          padding: 8px;
+          background: #f8f9fa;
+          border-radius: 4px;
+          font-size: 0.9em;
+      }
+
+      .setting-item strong {
+          color: #495057;
+      }
     </style>
   </head>
   <body>
     <div class="chat-container">
-      <h1>Chat with LLM</h1>
-      <div class="current-model">
-          <strong>Current LLM:</strong> {{ current_llm }}
-      </div>
+       <h1>Chat with LLM</h1>
+        <div class="current-settings">
+            <div class="setting-item">
+                <strong>Current LLM:</strong> {{ current_llm }}
+            </div>
+            <div class="setting-item">
+                <strong>Vector Database:</strong> {{ current_vector_db }}
+            </div>
+        </div>
   
       <div class="chat-history" id="chatHistory">
           {% if chat_history %}
