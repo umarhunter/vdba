@@ -23,6 +23,54 @@
         border-radius: 6px;
         margin-bottom: 20px;
       }
+
+      .assistant-message {
+        float: left;
+        background: #f1f3f4;
+        color: #333;
+        padding: 10px 15px;
+        border-radius: 15px 15px 15px 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .thought-toggle {
+        font-size: 0.8em;
+        color: #666;
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        cursor: pointer;
+        margin-top: 5px;
+  }
+
+      .thought-toggle:hover {
+        color: #007bff;
+        background: none;
+      }
+
+      .thought-bubble {
+        display: none;  /* Hidden by default */
+        font-style: italic;
+        color: #666;
+        background: #e9ecef;
+        padding: 8px 12px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+      }
+
+      .thought-bubble.visible {
+          display: block;
+      }
+
+      .answer-bubble {
+        background: #f1f3f4;
+        padding: 10px 15px;
+        border-radius: 15px;
+      }
+
+
       .chat-form {
         margin: 20px 0;
       }
@@ -165,9 +213,25 @@
           {% if chat_history %}
               {% for message in chat_history %}
                   <div class="message clearfix">
-                      <div class="{{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
-                          {{ message.content }}
-                      </div>
+                      {% if message.role == 'user' %}
+                          <div class="user-message">
+                              {{ message.content }}
+                          </div>
+                      {% else %}
+                          <div class="assistant-message">
+                              {% if message.thoughts %}
+                                  <div class="thought-bubble" id="thought-{{ loop.index }}">
+                                      🤔 {{ message.thoughts }}
+                                  </div>
+                              {% endif %}
+                              <div class="answer-bubble">{{ message.content }}</div>
+                              {% if message.thoughts %}
+                                  <button class="thought-toggle" onclick="toggleThought('thought-{{ loop.index }}')">
+                                      💭 Show Thought Process
+                                  </button>
+                              {% endif %}
+                          </div>
+                      {% endif %}
                   </div>
               {% endfor %}
           {% endif %}
@@ -206,55 +270,85 @@
         chatHistory.scrollTop = chatHistory.scrollHeight;
       }
 
-      // Add new message to chat
-      function addMessage(content, isUser = false) {
+    function addMessage(content, isUser = false, thoughts = null) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message clearfix';
-        messageDiv.innerHTML = `
-          <div class="${isUser ? 'user-message' : 'assistant-message'}">
-            ${content}
-          </div>
-        `;
+        
+        if (isUser) {
+            messageDiv.innerHTML = `
+                <div class="user-message">
+                    ${content}
+                </div>
+            `;
+        } else {
+            const thoughtId = 'thought-' + Date.now();  // Unique ID for the thought bubble
+            messageDiv.innerHTML = `
+                <div class="assistant-message">
+                    <div class="thought-bubble" id="${thoughtId}">🤔 ${thoughts || 'No thoughts available'}</div>
+                    <div class="answer-bubble">${content}</div>
+                    ${thoughts ? `
+                        <button class="thought-toggle" onclick="toggleThought('${thoughtId}')">
+                            💭 Show Thought Process
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
         chatHistory.appendChild(messageDiv);
         scrollToBottom();
-      }
+    }
 
-      async function handleSubmit(event) {
-        event.preventDefault();
-        const input = document.getElementById('q');
-        const message = input.value.trim();
+    // function to toggle thoughts visibility
+    function toggleThought(thoughtId) {
+        const thoughtBubble = document.getElementById(thoughtId);
+        const button = thoughtBubble.parentElement.querySelector('.thought-toggle');
         
-        if (!message) return;
-
-        // Add user message
-        addMessage(message, true);
-        input.value = '';
-
-        // Show spinner
-        spinner.style.display = 'block';
-
-        try {
-            const response = await fetch(`{{ url_for('main.chat') }}?q=${encodeURIComponent(message)}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            // Add assistant response
-            if (data.answer) {
-                addMessage(data.answer);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            addMessage('Error: ' + error.message, false);
-        } finally {
-            spinner.style.display = 'none';
+        if (thoughtBubble.classList.contains('visible')) {
+            thoughtBubble.classList.remove('visible');
+            button.textContent = '💭 Show Thought Process';
+        } else {
+            thoughtBubble.classList.add('visible');
+            button.textContent = '💭 Hide Thought Process';
         }
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault();
+      const input = document.getElementById('q');
+      const message = input.value.trim();
+      
+      if (!message) return;
+
+      // Add user message
+      addMessage(message, true);
+      input.value = '';
+
+      // Show spinner
+      spinner.style.display = 'block';
+
+      try {
+        const response = await fetch(`{{ url_for('main.chat') }}?q=${encodeURIComponent(message)}`, {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        // Add assistant response with thoughts
+        if (data.answer) {
+          addMessage(data.answer, false, data.thoughts);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        addMessage('Error: ' + error.message, false);
+      } finally {
+        spinner.style.display = 'none';
+      }
     }
 
       document.addEventListener('DOMContentLoaded', () => {

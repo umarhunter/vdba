@@ -104,6 +104,7 @@
           <div class="dataset-controls">
             <select id="dataset" name="dataset">
               <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
+              <option value="CUAD" {% if config.dataset == 'CUAD' %}selected{% endif %}>Contract Understanding Atticus Dataset (CUAD)</option>
               {% for dataset in config.custom_datasets %}
                 <option value="{{ dataset.name }}" {% if config.dataset == dataset.name %}selected{% endif %}>
                   {{ dataset.name }}

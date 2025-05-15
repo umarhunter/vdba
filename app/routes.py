@@ -16,8 +16,9 @@ from werkzeug.utils import secure_filename
 from scripts.chromadb_handler import ChromaDBHandler
 from scripts.pineconedb_handler import PineconeHandler
 from scripts.pgvector_hander import PGVectorHandler
-from scripts.data_loader import load_medicare_data
+from scripts.data_loader import load_medicare_data, load_cuad_data
 from scripts.text_utils import create_dynamic_embedding_text
+from scripts.prompt_utils import QA_PROMPT, parser
 
 # Define the USER_CONFIG global variable with default settings.
 USER_CONFIG = {
@@ -210,6 +211,8 @@ def configure_embeddings():
         try:
             if USER_CONFIG['dataset'] == "Medicare":
                 data_df = load_medicare_data()
+            elif USER_CONFIG['dataset'] == "CUAD":
+                data_df = load_cuad_data()
             else:
                 # Load custom dataset
                 dataset_info = next((d for d in USER_CONFIG.get('custom_datasets', []) 
@@ -304,6 +307,8 @@ def configure_embeddings():
         # Get available fields from current dataset
         if USER_CONFIG['dataset'] == "Medicare":
             data_df = load_medicare_data()
+        elif USER_CONFIG['dataset'] == "CUAD":
+            data_df = load_cuad_data()
         else:
             dataset_info = next((d for d in USER_CONFIG.get('custom_datasets', []) 
                               if d['name'] == USER_CONFIG['dataset']), None)
@@ -423,20 +428,40 @@ def chat():
             except Exception as e:
                 return jsonify({"error": f"Failed to load model '{selected_llm}': {str(e)}"}), 400
 
-            # Create QA chain with appropriate retriever
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 chain_type="stuff",
-                retriever=retriever
+                retriever=retriever,
+                return_source_documents=True,
+                chain_type_kwargs={
+                    "prompt": QA_PROMPT,
+                    "verbose": True
+                }
             )
-            
-            answer = qa_chain.run(query)
-            
-            # Add to chat history
-            session['chat_history'].append({'role': 'user', 'content': query})
-            session['chat_history'].append({'role': 'assistant', 'content': answer})
-            
-            return jsonify({'answer': answer})
+
+            # Get relevant documents first
+            docs = retriever.get_relevant_documents(query)
+
+            # Create the formatted prompt with all required variables
+            raw = qa_chain.invoke({"query": query})
+            parsed  = parser.parse(raw["result"])
+
+            answer   = parsed["answer"]
+            thoughts = parsed["thoughts"]
+
+            # Update this section to store both thoughts and answer
+            session["chat_history"].append({
+                "role": "user", 
+                "content": query
+            })
+            session["chat_history"].append({
+                "role": "assistant", 
+                "content": answer,
+                "thoughts": thoughts  # Add thoughts to history
+            })
+            session.modified = True
+
+            return jsonify({"answer": answer, "thoughts": thoughts})
             
         except Exception as e:
             print(f"Error in chat: {str(e)}")
