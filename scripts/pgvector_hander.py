@@ -42,7 +42,6 @@ class PGVectorHandler:
         # after doing some research it appears that there is a psycopg3 driver limit to parameters (65,535) so we need to batch the inserts
         batch_size = 100  # Adjust as needed
 
-        
         for i in range(0, len(documents), batch_size):
             batch_docs = documents[i:i+batch_size]
             batch_ids = uuids[i:i+batch_size]

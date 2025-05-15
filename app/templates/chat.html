@@ -10,124 +10,20 @@
         margin: 40px auto;
         padding: 0 20px;
       }
+
       .chat-container {
         background: #f8f9fa;
         padding: 25px;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
+
       .current-model {
         background: white;
         padding: 12px;
         border: 1px solid #e1e4e8;
         border-radius: 6px;
         margin-bottom: 20px;
-      }
-
-      .assistant-message {
-        float: left;
-        background: #f1f3f4;
-        color: #333;
-        padding: 10px 15px;
-        border-radius: 15px 15px 15px 0;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-      }
-
-      .thought-toggle {
-        font-size: 0.8em;
-        color: #666;
-        background: none;
-        border: none;
-        padding: 4px 8px;
-        cursor: pointer;
-        margin-top: 5px;
-  }
-
-      .thought-toggle:hover {
-        color: #007bff;
-        background: none;
-      }
-
-      .thought-bubble {
-        display: none;  /* Hidden by default */
-        font-style: italic;
-        color: #666;
-        background: #e9ecef;
-        padding: 8px 12px;
-        border-radius: 12px;
-        margin-bottom: 8px;
-        font-size: 0.9em;
-      }
-
-      .thought-bubble.visible {
-          display: block;
-      }
-
-      .answer-bubble {
-        background: #f1f3f4;
-        padding: 10px 15px;
-        border-radius: 15px;
-      }
-
-
-      .chat-form {
-        margin: 20px 0;
-      }
-      input[type="text"] {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin: 8px 0;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #007bff;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-      }
-      button:hover {
-        background-color: #0056b3;
-      }
-      .answer {
-        background: white;
-        padding: 15px;
-        border: 1px solid #e1e4e8;
-        border-radius: 6px;
-        margin-top: 20px;
-      }
-      #spinner {
-        display: none;
-        margin: 20px 0;
-        text-align: center;
-      }
-      .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #007bff;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto;
-      }
-      .back-link {
-        display: block;
-        margin-top: 20px;
-        text-align: center;
-        color: #6c757d;
-        text-decoration: none;
-      }
-      .back-link:hover {
-        color: #343a40;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
       }
 
       .chat-history {
@@ -141,7 +37,7 @@
       }
 
       .message {
-        margin: 10px 0;
+        margin: 4px 0;
         max-width: 80%;
         clear: both;
       }
@@ -156,12 +52,56 @@
 
       .assistant-message {
         float: left;
-        background: #f1f3f4;
         color: #333;
-        padding: 10px 15px;
+        padding: 0;  /* Removed padding */
         border-radius: 15px 15px 15px 0;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .answer-bubble {
+        background: #f1f3f4;
+        padding: 8px 12px;
+        border-radius: 12px;
+        margin-bottom: 2px; /* Reduced margin */
+      }
+
+      .thought-bubble {
+        display: none;
+        font-style: italic;
+        color: #666;
+        background: #e9ecef;
+        padding: 6px 10px;
+        border-radius: 10px;
+        margin: 2px 0;  /* Reduced margin */
+        font-size: 0.9em;
+        order: 2;  /* Places thoughts after answer */
+      }
+
+      .thought-bubble.visible {
+        display: block;
+      }
+
+      .thought-toggle {
+        font-size: 0.8em;
+        color: #666;
+        background: none;
+        border: none;
+        padding: 2px 6px;
+        cursor: pointer;
+        margin: 2px 0;  /* Reduced margin */
+        align-self: flex-start;  /* Aligns button to the left */
+        order: 3;  /* Places button at the bottom */
+      }
+
+      .thought-toggle:hover {
+        color: #007bff;
+        background: none;
+      }
+
+      .chat-form {
+        margin: 20px 0;
       }
 
       .chat-input {
@@ -183,7 +123,18 @@
         border-radius: 25px;
       }
 
-      /* Update existing spinner styles */
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
       #spinner {
         position: fixed;
         bottom: 100px;
@@ -193,12 +144,40 @@
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      .back-link {
+        display: block;
+        margin-top: 20px;
+        text-align: center;
+        color: #6c757d;
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        color: #343a40;
       }
 
       .clearfix::after {
         content: "";
         clear: both;
         display: table;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
     </style>
   </head>
@@ -219,17 +198,15 @@
                           </div>
                       {% else %}
                           <div class="assistant-message">
-                              {% if message.thoughts %}
-                                  <div class="thought-bubble" id="thought-{{ loop.index }}">
-                                      🤔 {{ message.thoughts }}
-                                  </div>
-                              {% endif %}
-                              <div class="answer-bubble">{{ message.content }}</div>
-                              {% if message.thoughts %}
-                                  <button class="thought-toggle" onclick="toggleThought('thought-{{ loop.index }}')">
-                                      💭 Show Thought Process
-                                  </button>
-                              {% endif %}
+                            <div class="answer-bubble">{{ message.content }}</div>
+                            {% if message.thoughts %}
+                                <div class="thought-bubble" id="thought-{{ loop.index }}">
+                                    🤔 {{ message.thoughts }}
+                                </div>
+                                <button class="thought-toggle" onclick="toggleThought('thought-{{ loop.index }}')">
+                                    💭 Show Thought Process
+                                </button>
+                            {% endif %}
                           </div>
                       {% endif %}
                   </div>
@@ -281,12 +258,14 @@
                 </div>
             `;
         } else {
-            const thoughtId = 'thought-' + Date.now();  // Unique ID for the thought bubble
+            const thoughtId = 'thought-' + Date.now();
             messageDiv.innerHTML = `
                 <div class="assistant-message">
-                    <div class="thought-bubble" id="${thoughtId}">🤔 ${thoughts || 'No thoughts available'}</div>
                     <div class="answer-bubble">${content}</div>
                     ${thoughts ? `
+                        <div class="thought-bubble" id="${thoughtId}">
+                            🤔 ${thoughts}
+                        </div>
                         <button class="thought-toggle" onclick="toggleThought('${thoughtId}')">
                             💭 Show Thought Process
                         </button>

@@ -12,6 +12,8 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from werkzeug.utils import secure_filename
+from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 
 from scripts.chromadb_handler import ChromaDBHandler
 from scripts.pineconedb_handler import PineconeHandler
@@ -412,7 +414,6 @@ def chat():
             selected_llm = USER_CONFIG['llm'].lower()
             try:
                 if selected_llm == "openai":
-                    from langchain_openai import ChatOpenAI
                     if not os.environ.get("OPENAI_API_KEY"):
                         return jsonify({"error": "OpenAI API key not set"}), 400
                     llm = ChatOpenAI(
@@ -423,7 +424,6 @@ def chat():
                         max_retries=2,
                     )
                 else:
-                    from langchain_ollama import ChatOllama
                     llm = ChatOllama(model=selected_llm, temperature=0.0)
             except Exception as e:
                 return jsonify({"error": f"Failed to load model '{selected_llm}': {str(e)}"}), 400
@@ -444,9 +444,9 @@ def chat():
 
             # Create the formatted prompt with all required variables
             raw = qa_chain.invoke({"query": query})
-            parsed  = parser.parse(raw["result"])
+            parsed = parser.parse(raw["result"])
 
-            answer   = parsed["answer"]
+            answer = parsed["answer"]
             thoughts = parsed["thoughts"]
 
             # Update this section to store both thoughts and answer
