@@ -104,6 +104,7 @@
           <div class="dataset-controls">
             <select id="dataset" name="dataset">
               <option value="Medicare" {% if config.dataset == 'Medicare' %}selected{% endif %}>Medicare</option>
+              <option value="CUAD" {% if config.dataset == 'CUAD' %}selected{% endif %}>Contract Understanding Atticus Dataset (CUAD)</option>
               {% for dataset in config.custom_datasets %}
                 <option value="{{ dataset.name }}" {% if config.dataset == dataset.name %}selected{% endif %}>
                   {{ dataset.name }}
@@ -151,7 +152,7 @@
           <select id="vector_db" name="vector_db" onchange="toggleDbSettings()">
             <option value="ChromaDB" {% if config.vector_db == 'ChromaDB' %}selected{% endif %}>ChromaDB</option>
             <option value="PineconeDB" {% if config.vector_db == 'PineconeDB' %}selected{% endif %}>PineconeDB</option>
-            <option value="PGVector" {% if config.vector_db == 'PGVector' %}selected{% endif %}>PGVector</option>
+            <option value="PGVectorDB" {% if config.vector_db == 'PGVectorDB' %}selected{% endif %}>PGVectorDB</option>
           </select>
         </div>
 
@@ -210,13 +211,36 @@
           </div>
         </div>
         
+        <!-- PGVector section -->
+        <div id="pgvector-settings" class="db-settings {% if config.vector_db == 'PGVectorDB' %}active{% endif %}">
+            <h2>PGVector Settings</h2>
+            <div class="form-group">
+                <label for="pgvector_connection">Connection String</label>
+                <input type="text" id="pgvector_connection" name="pgvector_connection" 
+                      value="{{ config.pgvector_settings.connection_string }}">
+            </div>
+            <div class="form-group">
+                <label for="pgvector_collection">Collection Name</label>
+                <input type="text" id="pgvector_collection" name="pgvector_collection" 
+                      value="{{ config.pgvector_settings.collection_name }}">
+            </div>
+            <div class="form-group">
+                <label for="pgvector_batch_size">Batch Size</label>
+                <input type="number" id="pgvector_batch_size" name="pgvector_batch_size" 
+                      value="{{ config.pgvector_settings.batch_size }}" min="1" max="1000">
+            </div>
+            <div class="form-group">
+                <small class="help-text">Using embedding model selected in global settings.</small>
+            </div>
+        </div>
+
         <div class="form-group">
           <label for="embedding_model">Embedding Model</label>
           <select id="embedding_model" name="embedding_model">
-            <option value="all-MiniLM-L12-v2" {% if config.embedding_model == 'all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
-            <option value="all-MiniLM-L6-v2" {% if config.embedding_model == 'all-MiniLM-L6-v2' %}selected{% endif %}>MiniLM-L6-v2</option>
-            <option value="all-mpnet-base-v2" {% if config.embedding_model == 'all-mpnet-base-v2' %}selected{% endif %}>mpnet-base</option>
-            <option value="bge-large-en-v1.5" {% if config.embedding_model == 'bge-large-en-v1.5' %}selected{% endif %}>bge-large-en-v1.5</option>
+            <option value="sentence-transformers/all-MiniLM-L12-v2" {% if config.embedding_model == 'sentence-transformers/all-MiniLM-L12-v2' %}selected{% endif %}>MiniLM-L12</option>
+            <option value="sentence-transformers/all-MiniLM-L6-v2" {% if config.embedding_model == 'sentence-transformers/all-MiniLM-L6-v2' %}selected{% endif %}>MiniLM-L6-v2</option>
+            <option value="sentence-transformers/all-mpnet-base-v2" {% if config.embedding_model == 'sentence-transformers/all-mpnet-base-v2' %}selected{% endif %}>mpnet-base</option>
+            <option value="BAAI/bge-large-en-v1.5" {% if config.embedding_model == 'BAAI/bge-large-en-v1.5' %}selected{% endif %}>bge-large-en-v1.5</option>
           </select>
         </div>
 
@@ -284,11 +308,27 @@
           openaiModels.style.display = 'block';
         }
       }
-    
+      // deprecated functions for PGVector
+      // // Add to existing script section 
+      // function togglePGVectorModels() {
+      //     const provider = document.getElementById('pgvector_embedding_provider').value;
+      //     const openaiModels = document.getElementById('pgvector-openai-models');
+      //     const hfModels = document.getElementById('pgvector-hf-models');
+          
+      //     if (provider === 'openai') {
+      //         openaiModels.style.display = 'block';
+      //         hfModels.style.display = 'none';
+      //     } else {
+      //         openaiModels.style.display = 'none';
+      //         hfModels.style.display = 'block';
+      //     }
+      // }
+
       // Call both functions on page load
       document.addEventListener('DOMContentLoaded', function() {
         toggleDbSettings();
         togglePineconeModels();
+        //togglePGVectorModels();
       });
     
       // Add event listener for vector db changes

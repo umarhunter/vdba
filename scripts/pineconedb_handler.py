@@ -5,13 +5,6 @@ from pinecone import Pinecone
 from uuid import uuid4
 import pandas as pd
 
-from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.document_loaders import DataFrameLoader
-from pinecone import Pinecone
-from uuid import uuid4
-import pandas as pd
-
 class PineconeHandler:
     def __init__(self, api_key, index_name, embedding_provider='pinecone', model_name='multilingual-e5-large', namespace="default"):
         self.pc = Pinecone(api_key=api_key)
@@ -48,7 +41,8 @@ class PineconeHandler:
         # Add documents to vectorstore
         self.vectorstore.add_documents(documents=documents, ids=uuids)
         
-        return documents
+        doc_size = len(data_df)
+        return doc_size
     
     def similarity_search(self, query, k=5):
         """Perform similarity search"""
