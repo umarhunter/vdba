@@ -53,8 +53,8 @@ class PGVectorHandler:
 
     def similarity_search(self, query, k=5):
         """Perform similarity search."""
-        return self.vectorstore.similarity_search(query, k=k)
+        return self.vector_store.similarity_search(query, k=k)
 
     def get_retriever(self):
         """Get retriever for use with LangChain."""
-        return self.vectorstore.as_retriever()
+        return self.vector_store.as_retriever()
