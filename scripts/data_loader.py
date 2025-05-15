@@ -10,25 +10,28 @@ def load_medicare_data():
     # Construct the path to the data file
     data_path = os.path.join(PROJECT_ROOT, 'vdba', 'data', 'insurance', 'medicare.csv')
     
-    # Read the full dataset
-    sampled_medicare_data = pd.read_csv(data_path, dtype='str')
-    
-    # # Sample 50,000 rows randomly
-    # sampled_data = medicare_data.sample(n=50000, random_state=42)
-    
-    # # Save the sampled dataset back to the same file
-    # sampled_data.to_csv(data_path, index=False)
-    
+    # Read the dataset
+    try:
+        sampled_medicare_data = pd.read_csv(data_path, dtype='str')
+        sampled_medicare_data = sampled_medicare_data.fillna('')  # Fill NaN values with empty strings
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Medicare dataset not found at {data_path}. Please ensure the data file exists.")
+    except Exception as e:
+        raise Exception(f"Error loading Medicare dataset: {str(e)}")
+
     return sampled_medicare_data
 
 def load_cuad_data():
-    # Load the data from the csv files
+    """Load and process the CUAD dataset."""
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-    # Construct the path to the data file
     data_path = os.path.join(PROJECT_ROOT, 'vdba', 'data', 'legal', 'CUAD_v1', 'master_clauses.csv')
     
-    # Read the full dataset
-    cuad_data = pd.read_csv(data_path, dtype='str')
-    
-    return cuad_data
+    try:
+        cuad_data = pd.read_csv(data_path, dtype='str')
+        # Fill NaN values with empty strings
+        cuad_data = cuad_data.fillna('')
+        return cuad_data
+    except FileNotFoundError:
+        raise FileNotFoundError(f"CUAD dataset not found at {data_path}. Please ensure the data file exists.")
+    except Exception as e:
+        raise Exception(f"Error loading CUAD dataset: {str(e)}")
