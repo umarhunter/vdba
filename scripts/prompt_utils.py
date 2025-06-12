@@ -1,4 +1,3 @@
-# scripts/prompt_utils.py
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 
@@ -6,40 +5,35 @@ from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 schemas = [
     ResponseSchema(
         name="thoughts",
-        description="Detailed step-by-step reasoning process, including: "
-                   "1. Initial analysis of the query "
-                   "2. Key information identified "
-                   "3. Relationships and patterns found "
-                   "4. Reasoning steps taken "
-                   "5. Confidence in conclusions"
+        description="Your detailed analysis process and reasoning steps"
     ),
     ResponseSchema(
         name="answer",
-        description="Clear, concise final answer for the user, incorporating the key findings"
+        description="Your final, concise answer based on the analysis"
     )
 ]
 
 parser = StructuredOutputParser.from_response_schemas(schemas)
 
-# Define the prompt template with consistent variable names
-template = """You are a helpful assistant analyzing documents.
-For each question, follow these steps:
-
-1. First, carefully think through the question
-2. Analyze the relevant information from the context
-3. Draw connections and identify patterns
-4. Form logical conclusions
-5. Express your confidence in the answer
+template = """You are a helpful assistant analyzing documents. Respond in the following JSON format:
 
 {format_instructions}
 
 Question: {question}
 Context: {context}
 
-Think through this step-by-step, showing your reasoning process before giving the final answer.
+Your response MUST be a valid JSON object with exactly two fields:
+1. "thoughts": A string containing your step-by-step analysis
+2. "answer": A string containing your final conclusion
+
+Example response:
+{{
+    "thoughts": "1. Examining the agreement details...\n2. Checking the dates...\n3. Analyzing the terms...",
+    "answer": "The clear, final answer based on the analysis."
+}}
 """
 
-# Create the prompt template
+# Create the prompt template with enforced formatting
 QA_PROMPT = ChatPromptTemplate.from_template(
     template=template,
     partial_variables={"format_instructions": parser.get_format_instructions()}
