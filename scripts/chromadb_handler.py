@@ -61,6 +61,12 @@ class ChromaDBHandler:
         """Perform similarity search."""
         return self.vector_store.similarity_search(query, k=k)
 
-    def get_retriever(self):
-        """Get retriever for use with LangChain."""
-        return self.vector_store.as_retriever()
+    def get_retriever(self, k=20):
+        """Get retriever for use with LangChain.
+        
+        Args:
+            k: Number of documents to retrieve (default: 20 for better coverage)
+        """
+        return self.vector_store.as_retriever(
+            search_kwargs={"k": k}
+        )
