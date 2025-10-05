@@ -4,7 +4,6 @@
 import os
 import chromadb
 import getpass
-import ollama
 import pandas as pd
 
 from datetime import datetime
@@ -13,6 +12,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from werkzeug.utils import secure_filename
 from langchain_openai import ChatOpenAI
+
+import ollama
 from langchain_ollama import ChatOllama
 
 from scripts.chromadb_handler import ChromaDBHandler
@@ -27,7 +28,7 @@ USER_CONFIG = {
     'dataset': 'Medicare',
     'vector_db': 'ChromaDB',
     'embedding_model': 'sentence-transformers/all-MiniLM-L6-v2',
-    'llm': 'deepseek-r1',
+    'llm': 'deepseek-r1:7b',  # Using local Ollama model
     'openai_api_token': '',
     'huggingface_api_token': '',
     
@@ -72,10 +73,12 @@ def get_available_llm_models():
         response = ollama.list()
         # Extract model names and remove ':latest' suffix
         models = [model.model.replace(':latest', '') for model in response.models]
+        models.append("openai")  # Add OpenAI as an option
         return models
     except Exception as e:
-        print(f"Error fetching Ollama models: {e}")
-        return ["deepseek", "llama2"]  # Fallback default models
+        print(f"Error connecting to Ollama: {e}")
+        print("Ollama is not running. Only OpenAI models will be available.")
+        return ["openai"]  # Fallback to OpenAI only
     
 
 # Settings Page
@@ -383,6 +386,34 @@ def chat():
 
     if query:
         try:
+            # Check if this is a casual query that doesn't need RAG
+            casual_keywords = ['hello', 'hi', 'hey', 'help', 'what can you do', 'how are you', 
+                             'thanks', 'thank you', 'bye', 'goodbye']
+            query_lower = query.lower().strip()
+            
+            # If it's a casual query (short and matches keywords), respond without RAG
+            is_casual = (len(query.split()) <= 6 and 
+                        any(keyword in query_lower for keyword in casual_keywords))
+            
+            if is_casual:
+                # Simple response without document retrieval
+                casual_response = {
+                    "answer": "Hello! I'm a data analysis assistant with access to neighborhood demographic data. I can help you with questions like:\n\n• 'What neighborhood has the largest population?'\n• 'Tell me about neighborhoods in Brooklyn'\n• 'Which areas have the most residents?'\n\nWhat would you like to know?",
+                    "thoughts": "This is a casual greeting. Explaining my capabilities without analyzing data."
+                }
+                
+                # Add to history
+                session["chat_history"].append({"role": "user", "content": query})
+                session["chat_history"].append({
+                    "role": "assistant", 
+                    "content": casual_response["answer"],
+                    "thoughts": casual_response["thoughts"]
+                })
+                session.modified = True
+                
+                return jsonify(casual_response)
+            
+            # For data questions, proceed with RAG
             # Initialize appropriate retriever based on vector_db setting
             if USER_CONFIG['vector_db'] == 'PGVectorDB':
                 pgvector_handler = PGVectorHandler(
@@ -424,7 +455,11 @@ def chat():
                         max_retries=2,
                     )
                 else:
-                    llm = ChatOllama(model=selected_llm, temperature=0.0)
+                    # Use Ollama
+                    try:
+                        llm = ChatOllama(model=selected_llm, temperature=0.0)
+                    except Exception as ollama_error:
+                        return jsonify({"error": f"Failed to connect to Ollama. Is it running? Error: {str(ollama_error)}"}), 400
             except Exception as e:
                 return jsonify({"error": f"Failed to load model '{selected_llm}': {str(e)}"}), 400
 
