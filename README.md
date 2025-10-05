@@ -20,6 +20,28 @@ VDBA is a Flask-based web application for analyzing and comparing different vect
   - Real-time chat interface
   - Thought process visualization
 
+## Screenshots
+
+### Dashboard / Menu
+The main dashboard provides quick access to all features including settings, chat interface, and dataset configuration.
+
+![Dashboard Menu](app/img/menu.png)
+
+### Settings Configuration
+Configure your vector database, embedding model, and LLM preferences.
+
+![Settings Page](app/img/settings.png)
+
+### Feature Selection
+Select which features/fields to use for creating embeddings from your dataset.
+
+![Feature Selection](app/img/feature_selection.png)
+
+### Chat Interface
+Interactive chat interface with RAG (Retrieval-Augmented Generation) for querying your data. Includes thought process visualization to see the LLM's reasoning.
+
+![Chat Interface](app/img/chat.png)
+
 ## Installation
 
 ### Prerequisites
