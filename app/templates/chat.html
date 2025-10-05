@@ -64,7 +64,7 @@
         background: #f1f3f4;
         padding: 8px 12px;
         border-radius: 12px;
-        margin-bottom: 2px; /* Reduced margin */
+        margin-bottom: 2px; 
       }
 
       .thought-bubble {
@@ -74,7 +74,7 @@
         background: #e9ecef;
         padding: 6px 10px;
         border-radius: 10px;
-        margin: 2px 0;  /* Reduced margin */
+        margin: 2px 0;
         font-size: 0.9em;
         order: 2;  /* Places thoughts after answer */
       }
@@ -90,7 +90,7 @@
         border: none;
         padding: 2px 6px;
         cursor: pointer;
-        margin: 2px 0;  /* Reduced margin */
+        margin: 2px 0;
         align-self: flex-start;  /* Aligns button to the left */
         order: 3;  /* Places button at the bottom */
       }
@@ -249,7 +249,8 @@
   
       <div id="spinner" style="display: none;">
           <div class="spinner"></div>
-          <p>Thinking...</p>
+          <p id="spinnerText">Thinking...</p>
+          <p style="font-size: 0.9em; color: #666; margin-top: 5px;">This may take 30-60 seconds for reasoning models</p>
       </div>
   </div>
 
@@ -329,15 +330,35 @@
       addMessage(message, true);
       input.value = '';
 
-      // Show spinner
+      // Show spinner and start timer
       spinner.style.display = 'block';
+      const spinnerText = document.getElementById('spinnerText');
+      const startTime = Date.now();
+      
+      // Update elapsed time every second
+      const timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        spinnerText.textContent = `Thinking... (${elapsed}s)`;
+      }, 1000);
 
       try {
+        // Create abort controller for timeout (2 minutes for reasoning models)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds
+
         const response = await fetch(`{{ url_for('main.chat') }}?q=${encodeURIComponent(message)}`, {
           headers: {
             'X-Requested-With': 'XMLHttpRequest'
-          }
+          },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
         if (data.error) {
@@ -350,9 +371,15 @@
         }
       } catch (error) {
         console.error('Error:', error);
-        addMessage('Error: ' + error.message, false);
+        if (error.name === 'AbortError') {
+          addMessage('⏱️ Request timed out. The model is taking too long to respond. Try using a faster model like "openai" or a smaller Ollama model.', false);
+        } else {
+          addMessage('❌ Error: ' + error.message, false);
+        }
       } finally {
+        clearInterval(timerInterval);
         spinner.style.display = 'none';
+        spinnerText.textContent = 'Thinking...';
       }
     }
 
